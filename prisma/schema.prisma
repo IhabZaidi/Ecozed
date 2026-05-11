@@ -1,0 +1,81 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  WORKER
+}
+
+enum ProductStatus {
+  DRAFT
+  TESTING
+  FACE
+  PRODUCTION
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  CANCELED
+  DELIVERED
+  RETURNED
+}
+
+model User {
+  id          String   @id @default(cuid())
+  username    String   @unique
+  password    String
+  role        Role     @default(WORKER)
+  permissions String[] // Array of permission strings
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Product {
+  id           String        @id @default(cuid())
+  name         String
+  weight       Float?
+  cost         Float
+  sellingPrice Float
+  adsCost      Float         @default(0)
+  extraCharges Float         @default(0)
+  imageUrl     String?       
+  status       ProductStatus @default(DRAFT)
+  assets       Json?         // { images: [], videos: [], landingPage: "", articles: [] }
+  orders       Order[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Order {
+  id           String      @id @default(cuid())
+  status       OrderStatus @default(PENDING)
+  clientName   String
+  clientPhone1 String
+  clientPhone2 String?
+  state        String
+  city         String
+  address      String
+  quantity     Int         @default(1)
+  notes        String?
+  product      Product     @relation(fields: [productId], references: [id])
+  productId    String
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model Blacklist {
+  id        String   @id @default(cuid())
+  phone     String   @unique
+  reason    String?
+  createdAt DateTime @default(now())
+}
