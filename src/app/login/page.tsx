@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input } from "@/components/ui";
 import { useAuthStore } from "@/store/useAuthStore";
+import { useLanguage } from "@/lib/translations";
 
 export default function LoginPage() {
+  const { t, language } = useLanguage();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -13,6 +15,11 @@ export default function LoginPage() {
   
   const router = useRouter();
   const setUser = useAuthStore((state) => state.setUser);
+
+  useEffect(() => {
+    document.documentElement.dir = language === "ar" ? "rtl" : "ltr";
+    document.documentElement.lang = language;
+  }, [language]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,21 +38,23 @@ export default function LoginPage() {
         setUser(data.user);
         router.push("/dashboard");
       } else {
-        setError(data.error || "خطأ في تسجيل الدخول");
+        setError(data.error || t.loginError);
       }
     } catch (err) {
-      setError("حدث خطأ ما، يرجى المحاولة لاحقاً");
+      setError(t.genericError);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const isRtl = language === "ar";
+
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
+    <div className={`min-h-screen flex items-center justify-center p-4 bg-slate-50 ${isRtl ? "font-cairo" : ""}`}>
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl shadow-slate-200/50 p-8 border border-slate-100">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">تسجيل الدخول</h1>
-          <p className="text-slate-500 text-sm">مرحباً بك في نظام إدارة الزيدي</p>
+          <h1 className="text-2xl font-bold text-slate-900 mb-2">{t.login}</h1>
+          <p className="text-slate-500 text-sm">{t.welcomeBack}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -56,15 +65,15 @@ export default function LoginPage() {
           )}
 
           <Input
-            label="اسم المستخدم"
-            placeholder="أدخل اسم المستخدم"
+            label={t.username}
+            placeholder={isRtl ? "أدخل اسم المستخدم" : "Enter username"}
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required
           />
 
           <Input
-            label="كلمة المرور"
+            label={t.password}
             type="password"
             placeholder="••••••••"
             value={password}
@@ -73,7 +82,7 @@ export default function LoginPage() {
           />
 
           <Button type="submit" className="w-full h-11" isLoading={isLoading}>
-            دخول
+            {t.login}
           </Button>
         </form>
       </div>
