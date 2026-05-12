@@ -28,6 +28,21 @@ enum OrderStatus {
   CANCELED
   DELIVERED
   RETURNED
+  NO_ANSWER
+  BUSY
+  PHONE_CLOSED
+}
+
+model Store {
+  id          String    @id @default(cuid())
+  name        String
+  description String?   @db.Text
+  websiteUrl  String?
+  products    Product[]
+  orders      Order[]
+  users       User[]    @relation("UserStores")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }
 
 model User {
@@ -36,6 +51,7 @@ model User {
   password    String
   role        Role     @default(WORKER)
   permissions String[] // Array of permission strings
+  stores      Store[]  @relation("UserStores")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -48,10 +64,14 @@ model Product {
   sellingPrice Float
   adsCost      Float         @default(0)
   extraCharges Float         @default(0)
-  imageUrl     String?       
-  status       ProductStatus @default(DRAFT)
+  imageUrl       String?       
+  description    String?       @db.Text
+  landingPageUrl String?
+  status         ProductStatus @default(DRAFT)
   assets       Json?         // { images: [], videos: [], landingPage: "", articles: [] }
   orders       Order[]
+  store        Store         @relation(fields: [storeId], references: [id])
+  storeId      String
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 }
@@ -66,9 +86,13 @@ model Order {
   city         String
   address      String
   quantity     Int         @default(1)
+  totalPrice   Float?      // Custom price for this specific order
+  adsCost      Float       @default(0)
   notes        String?
   product      Product     @relation(fields: [productId], references: [id])
   productId    String
+  store        Store       @relation(fields: [storeId], references: [id])
+  storeId      String
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
 }

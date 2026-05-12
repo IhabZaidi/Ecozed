@@ -14,7 +14,11 @@ export async function PUT(
 
   try {
     const body = await req.json();
-    const { status, clientName, clientPhone1, clientPhone2, state, city, address, notes } = body;
+    const { 
+      status, clientName, clientPhone1, clientPhone2, 
+      state, city, address, notes,
+      productId, quantity, adsCost, totalPrice
+    } = body;
 
     const data: any = {};
     if (status) data.status = status;
@@ -25,6 +29,10 @@ export async function PUT(
     if (city) data.city = city;
     if (address) data.address = address;
     if (notes !== undefined) data.notes = notes;
+    if (productId) data.productId = productId;
+    if (quantity !== undefined) data.quantity = parseInt(quantity) || 1;
+    if (adsCost !== undefined) data.adsCost = parseFloat(adsCost) || 0;
+    if (totalPrice !== undefined) data.totalPrice = parseFloat(totalPrice) || 0;
 
     const updatedOrder = await prisma.order.update({
       where: { id },
@@ -52,6 +60,7 @@ export async function PUT(
 
     return NextResponse.json(updatedOrder);
   } catch (error) {
+    console.error("Order update error:", error);
     return NextResponse.json({ error: "Failed to update order" }, { status: 500 });
   }
 }

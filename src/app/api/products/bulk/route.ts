@@ -15,9 +15,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid IDs" }, { status: 400 });
     }
 
+    const userStoreIds = user.storeIds || [];
+
     if (action === "delete") {
       await prisma.product.deleteMany({
-        where: { id: { in: ids } },
+        where: { 
+          id: { in: ids },
+          storeId: { in: userStoreIds }
+        },
       });
       return NextResponse.json({ success: true });
     }
@@ -29,7 +34,10 @@ export async function POST(req: NextRequest) {
       if (data.sellingPrice !== undefined) updateData.sellingPrice = parseFloat(data.sellingPrice);
 
       await prisma.product.updateMany({
-        where: { id: { in: ids } },
+        where: { 
+          id: { in: ids },
+          storeId: { in: userStoreIds }
+        },
         data: updateData,
       });
       return NextResponse.json({ success: true });

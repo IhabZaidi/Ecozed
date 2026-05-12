@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useLanguage } from "@/lib/translations";
 import CookieConsent from "./CookieConsent";
+import StoreSelector from "./StoreSelector";
 import { 
   LayoutDashboard, 
   Package, 
@@ -16,7 +17,9 @@ import {
   ChevronRight,
   ChevronDown,
   ChevronUp,
-  Check
+  Check,
+  Settings,
+  Store as StoreIcon
 } from "lucide-react";
 
 const DzFlag = () => (
@@ -49,6 +52,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: t.orders, href: "/orders", icon: ShoppingCart },
     { name: t.products, href: "/products", icon: Package },
     { name: t.users, href: "/users", icon: Users, adminOnly: true },
+    { name: t.manageStores, href: "/stores", icon: StoreIcon, adminOnly: true },
+    { name: t.settings, href: "/settings", icon: Settings, adminOnly: true },
   ];
 
   useEffect(() => {
@@ -138,6 +143,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
           
           <div className="flex items-center gap-4">
+            <StoreSelector />
+            <div className="h-10 w-px bg-slate-200 mx-2" />
             {/* Simplified Dropdown Language Switcher (No border, no shadow on button) */}
             <div className="relative" ref={dropdownRef}>
               <button

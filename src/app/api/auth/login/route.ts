@@ -15,6 +15,11 @@ export async function POST(req: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { username },
+      include: {
+        stores: {
+          select: { id: true, name: true }
+        }
+      }
     });
 
     if (!user) {
@@ -38,6 +43,7 @@ export async function POST(req: NextRequest) {
       username: user.username,
       role: user.role,
       permissions: user.permissions,
+      storeIds: user.stores.map(s => s.id)
     });
 
     const response = NextResponse.json({
@@ -46,6 +52,7 @@ export async function POST(req: NextRequest) {
         username: user.username,
         role: user.role,
         permissions: user.permissions,
+        stores: user.stores
       },
     });
 

@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Order" ADD COLUMN     "adsCost" DOUBLE PRECISION NOT NULL DEFAULT 0;

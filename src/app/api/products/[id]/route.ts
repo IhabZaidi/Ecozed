@@ -14,7 +14,7 @@ export async function PUT(
 
   try {
     const body = await req.json();
-    const { name, weight, cost, sellingPrice, status, adsCost, extraCharges, imageUrl } = body;
+    const { name, weight, cost, sellingPrice, status, adsCost, extraCharges, imageUrl, description, landingPageUrl } = body;
 
     const data: any = {};
     if (name) data.name = name;
@@ -24,6 +24,8 @@ export async function PUT(
     if (adsCost !== undefined) data.adsCost = parseFloat(adsCost);
     if (extraCharges !== undefined) data.extraCharges = parseFloat(extraCharges);
     if (imageUrl !== undefined) data.imageUrl = imageUrl;
+    if (description !== undefined) data.description = description;
+    if (landingPageUrl !== undefined) data.landingPageUrl = landingPageUrl;
     if (status) data.status = status;
 
     const updatedProduct = await prisma.product.update({
