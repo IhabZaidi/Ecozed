@@ -47,7 +47,11 @@ export default function LoginPage() {
         setUser(data.user);
         router.push("/dashboard");
       } else {
-        setError(data.error || t.loginError);
+        const errorMap: Record<string, string> = {
+          "Invalid credentials": t.invalidCredentials,
+          "Username and password are required": t.missingFields,
+        };
+        setError(errorMap[data.error] || t.loginError);
       }
     } catch (err) {
       setError(t.genericError);
@@ -78,7 +82,7 @@ export default function LoginPage() {
 
           <Input
             label={t.username}
-            placeholder={isRtl ? "أدخل اسم المستخدم" : "Enter username"}
+            placeholder={t.usernamePlaceholder}
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required

@@ -91,12 +91,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         if (!res.ok) throw new Error("Unauthorized");
         const data = await res.json();
         setUser(data.user);
+        setIsInitialLoad(false);
       } catch {
         logout();
         router.push("/login");
-        return;
-      } finally {
-        setIsInitialLoad(false);
       }
     }
     checkAuth();

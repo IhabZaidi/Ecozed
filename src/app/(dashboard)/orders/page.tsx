@@ -160,8 +160,8 @@ export default function OrdersPage() {
     setLoadingStopDesk(true);
     try {
       const res = await fetch(`/api/settings/shipping/stop-desk-communes?wilayaId=${wilayaCode}`);
-      if (res.ok) {
-        const data = await res.json();
+      const data = res.ok ? await res.json() : null;
+      if (res.ok && data) {
         const names = new Set<string>(
           (data.communes || [])
             .filter((c: any) => c.hasStopDesk === true)
@@ -171,7 +171,7 @@ export default function OrdersPage() {
       } else {
         setStopDeskCommunes(new Set<string>());
       }
-    } catch {
+    } catch (err) {
       setStopDeskCommunes(new Set<string>());
     } finally {
       setLoadingStopDesk(false);
@@ -230,7 +230,8 @@ export default function OrdersPage() {
 
   const fetchShippingProviders = async () => {
     const res = await fetch("/api/settings/shipping-provider");
-    if (res.ok) setShippingProviders(await res.json());
+    const data = res.ok ? await res.json() : null;
+    if (res.ok) setShippingProviders(data);
   };
 
   const fetchCommunes = async (wilayaCode?: string) => {
@@ -405,7 +406,7 @@ export default function OrdersPage() {
       } else {
         const err = await res.json();
         if (err.rateLimited) {
-          showToast("error", isRtl ? "تم تجاوز الحد المسموح من الطلبات. الرجاء الانتظار والمحاولة مرة أخرى." : err.error);
+          showToast("error", t.rateLimitError);
         } else {
           showToast("error", err.error || t.orderFailedDispatch);
         }
@@ -462,6 +463,10 @@ export default function OrdersPage() {
   };
 
   const handleSyncTracking = async () => {
+    if (!shippingProviders.some(p => p.isActive)) {
+      showToast("error", t.orderNoShippingProvider);
+      return;
+    }
     setIsLoading(true);
     try {
       const res = await fetch("/api/orders/shipping/sync-tracking", {
@@ -1073,58 +1078,60 @@ export default function OrdersPage() {
             </div>
 
             <div className="flex items-center gap-2 pl-6 border-l border-slate-700">
-               {/* Send confirmed orders to shipping */}
-               {selectedIds.some(id => {
-                 const o = orders.find(o => o.id === id);
-                 return o?.status === "CONFIRMED" && !o.sentToEcotrack;
-               }) && (() => {
-                 const hasProvider = selectedIds.some(id => {
-                   const o = orders.find(o => o.id === id);
-                   if (!o) return false;
-                   return shippingProviders.some(p => p.isActive && (p.storeId === o.storeId || !p.storeId));
-                 });
-                 return (
-                   <button 
-                     onClick={hasProvider ? handleSendToShipping : undefined}
-                     className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl transition-all text-xs font-bold whitespace-nowrap ${
-                       hasProvider
-                         ? "hover:bg-emerald-500 hover:text-white text-emerald-400 cursor-pointer"
-                         : "text-slate-600 cursor-not-allowed opacity-50"
-                     }`}
-                      title={hasProvider ? t.sendToShipping : t.orderNoShippingProvider}
-                   >
-                     <PackageIcon size={14} />
-                     {t.sendToShipping}
-                   </button>
-                 );
-               })()}
-               {selectedIds.some(id => {
-                 const o = orders.find(o => o.id === id);
-                 return o?.sentToEcotrack && !o.ecotrackValidated;
-               }) && (
-                 <button 
-                   onClick={handleValidateShipping}
-                   className="flex items-center gap-2 px-4 py-2.5 rounded-2xl hover:bg-indigo-500 hover:text-white transition-all text-xs font-bold text-indigo-400 whitespace-nowrap"
-                   title={t.validateShipping}
-                 >
-                   <TrendingUp size={14} />
-                   {t.validateShipping}
-                 </button>
-               )}
-               {selectedIds.some(id => {
-                 const o = orders.find(o => o.id === id);
-                 return o?.sentToEcotrack;
-               }) && (
-                 <button 
-                   onClick={handleBulkSyncTracking}
-                   className="flex items-center gap-2 px-4 py-2.5 rounded-2xl hover:bg-slate-100 hover:text-slate-900 transition-all text-xs font-bold whitespace-nowrap"
-                   title={t.syncTrackingDesc}
-                 >
-                   <RefreshCw size={14} />
-                   {t.syncTracking}
-                 </button>
-               )}
-               {/* Print labels for sent orders */}
+               {(() => {
+                  const hasActiveProvider = selectedIds.some(id => {
+                    const o = orders.find(o => o.id === id);
+                    if (!o) return false;
+                    return shippingProviders.some(p => p.isActive && (p.storeId === o.storeId || !p.storeId));
+                  });
+                  return (
+                   <>
+                      {/* Send confirmed orders to shipping */}
+                      {hasActiveProvider && selectedIds.some(id => {
+                        const o = orders.find(o => o.id === id);
+                        return o?.status === "CONFIRMED" && !o.sentToEcotrack;
+                      }) && (
+                        <button 
+                          onClick={handleSendToShipping}
+                          className="flex items-center gap-2 px-4 py-2.5 rounded-2xl transition-all text-xs font-bold whitespace-nowrap hover:bg-emerald-500 hover:text-white text-emerald-400 cursor-pointer"
+                          title={t.sendToShipping}
+                        >
+                          <PackageIcon size={14} />
+                          {t.sendToShipping}
+                        </button>
+                      )}
+                      {/* Dispatch to shipping */}
+                      {hasActiveProvider && selectedIds.some(id => {
+                        const o = orders.find(o => o.id === id);
+                        return o?.sentToEcotrack && !o.ecotrackValidated;
+                      }) && (
+                        <button 
+                          onClick={handleValidateShipping}
+                          className="flex items-center gap-2 px-4 py-2.5 rounded-2xl transition-all text-xs font-bold whitespace-nowrap hover:bg-indigo-500 hover:text-white text-indigo-400 cursor-pointer"
+                          title={t.validateShipping}
+                        >
+                          <TrendingUp size={14} />
+                          {t.validateShipping}
+                        </button>
+                       )}
+                       {/* Sync tracking */}
+                       {hasActiveProvider && selectedIds.some(id => {
+                         const o = orders.find(o => o.id === id);
+                         return o?.sentToEcotrack;
+                       }) && (
+                         <button 
+                           onClick={handleBulkSyncTracking}
+                           className="flex items-center gap-2 px-4 py-2.5 rounded-2xl transition-all text-xs font-bold whitespace-nowrap hover:bg-slate-100 hover:text-slate-900 cursor-pointer"
+                           title={t.syncTrackingDesc}
+                         >
+                           <RefreshCw size={14} />
+                           {t.syncTracking}
+                         </button>
+                       )}
+                    </>
+                  );
+                })()}
+                {/* Print labels for sent orders */}
                 {selectedIds.some(id => {
                   const o = orders.find(o => o.id === id);
                   return o?.ecotrackRef;

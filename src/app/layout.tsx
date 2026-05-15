@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Cairo } from "next/font/google";
+import { cookies } from "next/headers";
 import "./globals.css";
 
 const cairo = Cairo({
@@ -13,13 +14,17 @@ export const metadata: Metadata = {
   description: "Advanced E-commerce Management System",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const locale = cookieStore.get("NEXT_LOCALE")?.value === "en" ? "en" : "ar";
+  const dir = locale === "ar" ? "rtl" : "ltr";
+
   return (
-    <html lang="ar" dir="rtl" className={`${cairo.variable} h-full antialiased`} suppressHydrationWarning>
+    <html lang={locale} dir={dir} className={`${cairo.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="font-cairo min-h-full bg-slate-50 text-slate-900" suppressHydrationWarning>
         {children}
       </body>

@@ -14,14 +14,6 @@ interface LanguageState {
 }
 
 const getInitialLanguage = (): Language => {
-  if (typeof window === "undefined") return "ar";
-  
-  // Try to get from cookie first
-  const cookieMatch = document.cookie.match(/NEXT_LOCALE=([^;]+)/);
-  if (cookieMatch && (cookieMatch[1] === "ar" || cookieMatch[1] === "en")) {
-    return cookieMatch[1] as Language;
-  }
-  
   return "ar";
 };
 

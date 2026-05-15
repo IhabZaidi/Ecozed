@@ -76,6 +76,14 @@ Have an idea or feature request? I'd love to hear from you!
 
 ---
 
+## ⚠️ Important: Backup Before Updating
+
+Before updating your Ecozed instance to a newer version, **always export a backup** of your database first.
+
+Ecozed has a **built-in backup system** located in **Settings → Data Backup & Restore**. Export a backup file before upgrading — if anything goes wrong or data is lost, you can simply re-import it.
+
+---
+
 ## 🚀 Deployment Options
 
 ### Option 1: 100% Free — Deploy on Vercel (Recommended)
@@ -121,9 +129,13 @@ Fork this repo on GitHub to your account.
 
 5. Click **Deploy**
 
-### Step 4: First Login
+### Step 4: Create Admin Account (Automatic)
 
-Once deployed, navigate to your Vercel URL. Register an admin account and start managing your business!
+Once deployed, navigate to your Vercel URL. The first visit will automatically redirect to a **Setup Wizard** where you create the admin account. No scripts or CLI commands needed — just fill in the form.
+
+After creating the admin account, you'll be redirected to the login page. Log in and start managing your business!
+
+> **Note:** The setup page only appears when no admin account exists. After the first admin is created, it is no longer accessible.
 
 ---
 

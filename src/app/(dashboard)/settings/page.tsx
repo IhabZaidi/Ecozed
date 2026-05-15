@@ -15,9 +15,6 @@ import {
   ArrowRight,
   Settings as SettingsIcon,
   User,
-  Bell,
-  Lock,
-  Globe,
   Truck,
   Search,
   Save,
@@ -38,7 +35,7 @@ import {
   Printer
 } from "lucide-react";
 
-type SettingsSection = "general" | "backup" | "notifications" | "security" | "shipping" | "integrations" | "shipping-provider";
+type SettingsSection = "backup" | "shipping" | "integrations" | "shipping-provider";
 
 interface ShippingConfig {
   id: string;
@@ -58,6 +55,7 @@ export default function SettingsPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRestoreModalOpen, setIsRestoreModalOpen] = useState(false);
   const [syncingProviderId, setSyncingProviderId] = useState<string | null>(null);
+  const [seeding, setSeeding] = useState(false);
   const [restoreFile, setRestoreFile] = useState<File | null>(null);
   const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
@@ -73,6 +71,23 @@ export default function SettingsPage() {
       }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSeedShipping = async () => {
+    setSeeding(true);
+    try {
+      const res = await fetch("/api/settings/shipping/seed", { method: "POST" });
+      if (res.ok) {
+        showToast("success", t.shippingSeedSuccess);
+        fetchShipping();
+      } else {
+        showToast("error", t.settingsSaveFailed);
+      }
+    } catch {
+      showToast("error", t.genericError);
+    } finally {
+      setSeeding(false);
     }
   };
 
@@ -412,13 +427,10 @@ export default function SettingsPage() {
   };
 
   const menuItems = [
-    { id: "general", label: t.settingsMenuGeneral, icon: Globe },
     { id: "shipping", label: t.shipping, icon: Truck },
     { id: "integrations", label: t.integrations, icon: Link },
     { id: "shipping-provider", label: t.shippingProvider, icon: Package },
     { id: "backup", label: t.backupTitle, icon: Database },
-    { id: "notifications", label: t.settingsMenuNotifications, icon: Bell },
-    { id: "security", label: t.settingsMenuSecurity, icon: Lock },
   ];
 
   return (
@@ -471,6 +483,17 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
+                {shippingConfigs.length === 0 && !isLoading ? (
+                  <div className="rounded-[24px] border border-slate-100 bg-white py-20 text-center">
+                    <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-300">
+                      <MapPin size={28} />
+                    </div>
+                    <p className="text-slate-500 text-sm mb-6">{t.shippingEmpty}</p>
+                    <Button onClick={handleSeedShipping} isLoading={seeding}>
+                      {t.shippingLoadTemplate}
+                    </Button>
+                  </div>
+                ) : (
                 <div className="overflow-x-auto rounded-[24px] border border-slate-100">
                   <table className="w-full">
                     <thead>
@@ -591,6 +614,7 @@ export default function SettingsPage() {
                     </tbody>
                   </table>
                 </div>
+              )}
               </div>
               
               {/* Floating Bulk Action Bar */}
@@ -1191,14 +1215,11 @@ export default function SettingsPage() {
             </div>
           )}
 
-          {["general", "notifications", "security"].includes(activeSection) && (
+          {activeSection && !menuItems.find(i => i.id === activeSection) && (
             <div className="bg-white rounded-[40px] border border-slate-200 p-20 text-center animate-in fade-in zoom-in-95 duration-500">
                <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300">
                   <SettingsIcon size={40} />
                </div>
-               <h3 className="text-2xl font-black text-slate-900 mb-2">
-                 {menuItems.find(i => i.id === activeSection)?.label}
-               </h3>
                <p className="text-slate-500">
                  {t.settingsUnderDevelopment}
                </p>

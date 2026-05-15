@@ -236,6 +236,9 @@
   "settingsShow": "Show",
   "settingsSelectStore": "Select a store...",
   "settingsAutoGenerateKey": "A secure random key will be generated automatically",
+  "shippingEmpty": "No shipping costs configured yet.",
+  "shippingLoadTemplate": "Load list from template",
+  "shippingSeedSuccess": "Shipping states loaded successfully!",
   "settingsLastSync": "Last sync:",
   "settingsSyncing": "Syncing...",
   "settingsSyncCommunes": "Sync Communes",
@@ -375,5 +378,21 @@
   "salaryExtraPieces": "extra pieces",
   "salaryConfirmPayout": "Are you sure you want to pay this amount and reset the account?",
 
-  "orderRequiredFields": "Please fill all required fields (state, commune, address)"
+  "orderRequiredFields": "Please fill all required fields (state, commune, address)",
+
+  "setup": "Setup",
+  "setupTitle": "Create Admin Account",
+  "setupDesc": "Set up your first admin account to manage your e-commerce business.",
+  "setupSuccess": "Admin account created! Please log in.",
+  "setupErrorExists": "Admin account already exists",
+  "setupShortPassword": "Password must be at least 8 characters",
+  "setupErrorMissingFields": "Username and password are required",
+  "setupErrorUsernameExists": "Username already exists",
+
+  "missingFields": "Username and password are required",
+  "invalidCredentials": "Invalid credentials",
+  "rateLimitError": "Rate limit exceeded. Please wait a moment and try again.",
+  "usernamePlaceholder": "Enter username",
+  "confirmPassword": "Confirm Password",
+  "passwordsDoNotMatch": "Passwords do not match"
 }

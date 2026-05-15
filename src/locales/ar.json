@@ -236,8 +236,11 @@
   "settingsShow": "إظهار",
   "settingsSelectStore": "اختر متجراً...",
   "settingsAutoGenerateKey": "سيتم إنشاء مفتاح آمن تلقائياً",
+  "shippingEmpty": "لم يتم تكوين تكاليف الشحن بعد.",
+  "shippingLoadTemplate": "تحميل القائمة من النموذج",
+  "shippingSeedSuccess": "تم تحميل ولايات الشحن بنجاح!",
   "settingsLastSync": "آخر مزامنة:",
-  "settingsSyncing": "جاري المزامنة...",
+  "settingsSyncing": "جارٍ المزامنة...",
   "settingsSyncCommunes": "مزامنة البلديات",
   "settingsNotSynced": "لم تتم مزامنة قائمة البلديات بعد. انقر للمزامنة.",
   "settingsAllStoresGlobal": "جميع المتاجر (عام)",
@@ -375,5 +378,21 @@
   "salaryExtraPieces": "قطعة إضافية",
   "salaryConfirmPayout": "هل أنت متأكد من دفع هذا المبلغ وتصفير الحساب؟",
 
-  "orderRequiredFields": "يرجى ملء جميع الحقول الإلزامية (الولاية، البلدية، العنوان)"
+  "orderRequiredFields": "يرجى ملء جميع الحقول الإلزامية (الولاية، البلدية، العنوان)",
+
+  "setup": "الإعداد",
+  "setupTitle": "إنشاء حساب المدير",
+  "setupDesc": "أنشئ حساب المدير الأول لإدارة متجرك الإلكتروني.",
+  "setupSuccess": "تم إنشاء حساب المدير! الرجاء تسجيل الدخول.",
+  "setupErrorExists": "حساب المدير موجود بالفعل",
+  "setupShortPassword": "كلمة المرور يجب أن تكون 8 أحرف على الأقل",
+  "setupErrorMissingFields": "اسم المستخدم وكلمة المرور مطلوبان",
+  "setupErrorUsernameExists": "اسم المستخدم موجود بالفعل",
+
+  "missingFields": "اسم المستخدم وكلمة المرور مطلوبان",
+  "invalidCredentials": "بيانات الدخول غير صحيحة",
+  "rateLimitError": "تم تجاوز الحد المسموح من الطلبات. الرجاء الانتظار والمحاولة مرة أخرى.",
+  "usernamePlaceholder": "أدخل اسم المستخدم",
+  "confirmPassword": "تأكيد كلمة المرور",
+  "passwordsDoNotMatch": "كلمتا المرور غير متطابقتين"
 }
