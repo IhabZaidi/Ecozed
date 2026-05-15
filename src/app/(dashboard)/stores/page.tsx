@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import DashboardLayout from "@/components/layout/DashboardLayout";
-import { Button, Input, Modal } from "@/components/ui";
+import { Button, Input, Modal, showToast } from "@/components/ui";
 import { useLanguage } from "@/lib/translations";
+import { useAuthStore } from "@/store/useAuthStore";
 import { 
   Store as StoreIcon, 
   Plus, 
@@ -32,6 +32,7 @@ interface Store {
 
 export default function StoresPage() {
   const { t, language } = useLanguage();
+  const setUser = useAuthStore((state) => state.setUser);
   const [stores, setStores] = useState<Store[]>([]);
   const [filter, setFilter] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -80,6 +81,16 @@ export default function StoresPage() {
     setIsModalOpen(true);
   };
 
+  const refreshAuthUser = async () => {
+    try {
+      const res = await fetch("/api/auth/me");
+      if (res.ok) {
+        const data = await res.json();
+        setUser(data.user);
+      }
+    } catch {}
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -94,7 +105,11 @@ export default function StoresPage() {
     if (res.ok) {
       setIsModalOpen(false);
       fetchStores();
-      // Optional: Update session/auth store if current store name changed
+      refreshAuthUser();
+      showToast("success", editingStore ? t.storeUpdated : t.storeCreated);
+    } else {
+      const err = await res.json().catch(() => ({}));
+      showToast("error", err.error || t.storeFailedSave);
     }
     setIsLoading(false);
   };
@@ -107,6 +122,10 @@ export default function StoresPage() {
       setIsDeleteModalOpen(false);
       setStoreToDelete(null);
       fetchStores();
+      refreshAuthUser();
+      showToast("success", t.storeDeleted);
+    } else {
+      showToast("error", t.storeFailedDelete);
     }
     setIsLoading(false);
   };
@@ -116,11 +135,11 @@ export default function StoresPage() {
   );
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-10">
         <div>
           <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-2">{t.manageStores}</h2>
-          <p className="text-slate-500 text-sm">{isRtl ? "إدارة وتعديل جميع المتاجر في النظام." : "Manage and edit all business units in the system."}</p>
+          <p className="text-slate-500 text-sm">{t.storesPageDesc}</p>
         </div>
         
         <div className="flex items-center gap-3 w-full lg:w-auto">
@@ -185,7 +204,7 @@ export default function StoresPage() {
                 </a>
               )}
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">
-                {isRtl ? "تاريخ الإنشاء" : "Created At"}: {new Date(store.createdAt).toLocaleDateString(isRtl ? "ar-DZ" : "en-US")}
+                {t.storeCreatedAt}: {new Date(store.createdAt).toLocaleDateString(isRtl ? "ar-DZ" : "en-US")}
               </p>
             </div>
 
@@ -234,7 +253,7 @@ export default function StoresPage() {
           <div className="space-y-4">
             <Input
               label={t.storeName}
-              placeholder={isRtl ? "أدخل اسم المتجر" : "Enter store name"}
+              placeholder={t.storeNamePlaceholder}
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
@@ -242,7 +261,7 @@ export default function StoresPage() {
             />
             <Input
               label={t.storeDescription}
-              placeholder={isRtl ? "أدخل وصف المتجر" : "Enter store description"}
+              placeholder={t.storeDescPlaceholder}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               className="h-12"
@@ -274,7 +293,7 @@ export default function StoresPage() {
             <AlertCircle size={40} />
           </div>
           <div className="space-y-2">
-            <h4 className="text-xl font-black text-slate-900">{isRtl ? "هل أنت متأكد؟" : "Are you sure?"}</h4>
+            <h4 className="text-xl font-black text-slate-900">{t.storeDeleteConfirmTitle}</h4>
             <p className="text-slate-500 text-sm px-10">
               {t.deleteStoreWarning}
             </p>
@@ -285,6 +304,6 @@ export default function StoresPage() {
           </div>
         </div>
       </Modal>
-    </DashboardLayout>
+    </>
   );
 }

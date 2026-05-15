@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useLanguage } from "@/lib/translations";
 import { 
@@ -53,7 +52,7 @@ export default function DashboardPage() {
 
   const statCards = [
     { 
-      label: isRtl ? "إجمالي الطلبات" : "Total Orders", 
+      label: t.dashTotalOrders, 
       value: stats.orderCount.toString(), 
       icon: ShoppingCart,
       color: "text-blue-600",
@@ -61,7 +60,7 @@ export default function DashboardPage() {
       border: "border-blue-100"
     },
     { 
-      label: isRtl ? "طلبات قيد الانتظار" : "Pending Orders", 
+      label: t.dashPendingOrders, 
       value: stats.pendingCount.toString(), 
       icon: Clock,
       color: "text-amber-600",
@@ -69,15 +68,15 @@ export default function DashboardPage() {
       border: "border-amber-100"
     },
     { 
-      label: isRtl ? "إجمالي المبيعات" : "Total Sales", 
-      value: `${stats.totalSales.toFixed(0)} ${isRtl ? "د.ج" : "DA"}`, 
+      label: t.dashTotalSales, 
+      value: `${stats.totalSales.toFixed(0)} ${t.currency}`, 
       icon: TrendingUp,
       color: "text-emerald-600",
       bg: "bg-emerald-50",
       border: "border-emerald-100"
     },
     { 
-      label: isRtl ? "الطلبات المرتجعة" : "Returned Orders", 
+      label: t.dashReturnedOrders, 
       value: stats.returnCount.toString(), 
       icon: RotateCcw,
       color: "text-orange-600",
@@ -85,8 +84,8 @@ export default function DashboardPage() {
       border: "border-orange-100"
     },
     { 
-      label: isRtl ? "تكلفة الاسترجاع" : "Return Cost", 
-      value: `${stats.totalReturnCost.toFixed(0)} ${isRtl ? "د.ج" : "DA"}`, 
+      label: t.dashReturnCost, 
+      value: `${stats.totalReturnCost.toFixed(0)} ${t.currency}`, 
       icon: AlertTriangle,
       color: "text-red-600",
       bg: "bg-red-50",
@@ -94,7 +93,7 @@ export default function DashboardPage() {
     },
     { 
       label: t.netProfit, 
-      value: `${stats.totalProfit.toFixed(0)} ${isRtl ? "د.ج" : "DA"}`, 
+      value: `${stats.totalProfit.toFixed(0)} ${t.currency}`, 
       icon: Zap,
       color: "text-indigo-600",
       bg: "bg-indigo-50",
@@ -103,11 +102,11 @@ export default function DashboardPage() {
   ];
 
   return (
-    <DashboardLayout>
+    <>
       <div className="mb-10 flex justify-between items-center">
         <div>
-           <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-2">{isRtl ? "نظرة عامة" : "Overview"}</h2>
-           <p className="text-slate-500">{isRtl ? "أداء المتاجر المختارة في الوقت الفعلي." : "Real-time performance of selected stores."}</p>
+           <h2 className="text-3xl font-black text-slate-900 tracking-tight mb-2">{t.dashOverview}</h2>
+           <p className="text-slate-500">{t.dashOverviewDesc}</p>
         </div>
         <button 
           onClick={fetchStats}
@@ -149,23 +148,21 @@ export default function DashboardPage() {
             <Zap size={40} className="fill-white" />
           </div>
           <h2 className="text-3xl font-black text-white mb-4 tracking-tight">
-            {isRtl ? "مرحباً بك في لوحة التحكم الموحدة" : "Welcome to your Unified Dashboard"}
+            {t.dashWelcome}
           </h2>
           <p className="text-slate-400 text-lg leading-relaxed mb-10">
-            {isRtl 
-              ? "لقد قمنا بتفعيل نظام تعدد المتاجر. يمكنك الآن التبديل بين متاجر مختلفة أو رؤية إحصائيات مجمعة لكل أعمالك من مكان واحد." 
-              : "Multi-store architecture is now active. You can switch between different stores or view aggregated statistics for your entire business from one place."}
+            {t.dashWelcomeDesc}
           </p>
           <div className="flex justify-center gap-4">
              <div className="px-6 py-3 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 text-white font-bold text-sm">
-                {isRtl ? "تعدد المتاجر: نشط" : "Multi-store: Active"}
+                {t.dashMultiStoreActive}
              </div>
              <div className="px-6 py-3 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 text-white font-bold text-sm">
-                {isRtl ? "تشفير البيانات: مفعل" : "Encryption: Enabled"}
+                {t.dashEncryptionEnabled}
              </div>
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

@@ -29,20 +29,25 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Order has no tracking reference" }, { status: 400 });
     }
 
-    const config = await prisma.ecotrackConfig.findFirst({
+    let config = await prisma.ecotrackConfig.findFirst({
       where: { storeId: order.storeId, isActive: true },
     });
+    if (!config) {
+      config = await prisma.ecotrackConfig.findFirst({
+        where: { storeId: null, isActive: true },
+      });
+    }
 
     if (!config) {
       return NextResponse.json({ error: "No active shipping provider" }, { status: 400 });
     }
 
     // Fetch label PDF from Ecotrack
-    const labelUrl = `${config.baseUrl}/api/v1/get/order/label?tracking=${order.ecotrackRef}`;
+    const labelUrl = `${config.baseUrl.replace(/\/+$/, "")}/api/v1/get/order/label?tracking=${order.ecotrackRef}`;
     console.log("[GET /api/orders/shipping/label] Fetching label from:", labelUrl);
 
     const apiRes = await fetch(labelUrl, {
-      headers: { "x-api-key": config.apiKey },
+      headers: { "Authorization": `Bearer ${config.apiKey}` },
     });
 
     if (!apiRes.ok) {

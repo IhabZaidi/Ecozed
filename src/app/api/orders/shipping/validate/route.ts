@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUser } from "@/lib/auth";
 
+function delay(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 export async function POST(req: NextRequest) {
   const user = await getAuthUser();
   if (!user) {
@@ -36,23 +40,36 @@ export async function POST(req: NextRequest) {
     const results: { id: string; ref: string; success: boolean }[] = [];
 
     for (const [storeId, storeOrds] of storeOrders) {
-      const config = await prisma.ecotrackConfig.findFirst({
+      // Try store-specific config, then fall back to global (storeId: null)
+      let config = await prisma.ecotrackConfig.findFirst({
         where: { storeId, isActive: true },
       });
+      if (!config) {
+        config = await prisma.ecotrackConfig.findFirst({
+          where: { storeId: null, isActive: true },
+        });
+      }
 
       if (!config) {
         console.error(`[POST /api/orders/shipping/validate] No config for store ${storeId}, skipping ${storeOrds.length} orders`);
         continue;
       }
 
-      for (const order of storeOrds) {
-        const validateUrl = `${config.baseUrl}/api/v1/valid/order?tracking=${order.ecotrackRef}&ask_collection=1`;
+      for (let i = 0; i < storeOrds.length; i++) {
+        const order = storeOrds[i];
+
+        // Rate limit: 50 req/min = 1 per 1.2s; delay 1.5s between requests
+        if (i > 0) {
+          await delay(1500);
+        }
+
+        const validateUrl = `${config.baseUrl.replace(/\/+$/, "")}/api/v1/valid/order?tracking=${order.ecotrackRef}&ask_collection=0`;
         console.log("[POST /api/orders/shipping/validate] Validating:", order.ecotrackRef);
 
         try {
           const apiRes = await fetch(validateUrl, {
             method: "POST",
-            headers: { "x-api-key": config.apiKey },
+            headers: { "Authorization": `Bearer ${config.apiKey}` },
           });
 
           const apiData = await apiRes.json();
@@ -65,6 +82,9 @@ export async function POST(req: NextRequest) {
             });
             results.push({ id: order.id, ref: order.ecotrackRef!, success: true });
           } else {
+            if (apiRes.status === 429) {
+              return NextResponse.json({ error: "Rate limit exceeded. Please wait a moment and try again.", rateLimited: true }, { status: 429 });
+            }
             results.push({ id: order.id, ref: order.ecotrackRef!, success: false });
           }
         } catch (err) {

@@ -5,8 +5,10 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useLanguage } from "@/lib/translations";
+import { initAuthInterceptor } from "@/lib/http-client";
 import CookieConsent from "./CookieConsent";
 import StoreSelector from "./StoreSelector";
+import { Toast } from "@/components/ui";
 import { 
   LayoutDashboard, 
   Package, 
@@ -46,8 +48,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { user, setUser, logout } = useAuthStore();
   const { language, setLanguage, t } = useLanguage();
   const [isLangOpen, setIsLangOpen] = useState(false);
-  const [isChecking, setIsChecking] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const authChecked = useRef(false);
 
   const navItems = [
     { name: t.dashboard, href: "/dashboard", icon: LayoutDashboard },
@@ -72,26 +75,41 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [language]);
 
-  // Auth check on mount — verify httpOnly cookie, redirect to login if invalid
+  // Initialize the 401 interceptor once
   useEffect(() => {
+    initAuthInterceptor();
+  }, []);
+
+  // Auth check — runs ONCE on mount (layout persists across navigations)
+  useEffect(() => {
+    if (authChecked.current) return;
+    authChecked.current = true;
+
     async function checkAuth() {
       try {
         const res = await fetch("/api/auth/me");
-        if (!res.ok) {
-          logout();
-          router.push("/login");
-          return;
-        }
+        if (!res.ok) throw new Error("Unauthorized");
         const data = await res.json();
         setUser(data.user);
       } catch {
         logout();
         router.push("/login");
+        return;
       } finally {
-        setIsChecking(false);
+        setIsInitialLoad(false);
       }
     }
     checkAuth();
+  }, []);
+
+  // Listen for 401 from any API call via the interceptor
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      logout();
+      router.push("/login");
+    };
+    window.addEventListener("auth:unauthorized", handleUnauthorized);
+    return () => window.removeEventListener("auth:unauthorized", handleUnauthorized);
   }, []);
 
   const handleLogout = async () => {
@@ -102,7 +120,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const isRtl = language === "ar";
 
-  if (isChecking) {
+  if (isInitialLoad) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-slate-50" dir={isRtl ? "rtl" : "ltr"}>
         <div className="text-center">
@@ -114,7 +132,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="w-3 h-3 bg-slate-900 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
             <div className="w-3 h-3 bg-slate-900 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
           </div>
-          <p className="text-sm font-bold text-slate-400 tracking-wider uppercase">{isRtl ? "جارٍ التحقق..." : "Checking credentials..."}</p>
+          <p className="text-sm font-bold text-slate-400 tracking-wider uppercase">{t.layoutCheckingCredentials}</p>
         </div>
       </div>
     );
@@ -188,7 +206,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="flex items-center gap-4">
             <StoreSelector />
             <div className="h-10 w-px bg-slate-200 mx-2" />
-            {/* Simplified Dropdown Language Switcher (No border, no shadow on button) */}
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setIsLangOpen(!isLangOpen)}
@@ -210,7 +227,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       <div className="w-6 h-4 overflow-hidden border border-slate-100">
                         <UsFlag />
                       </div>
-                      <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">English</span>
+                      <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">{t.layoutEnglish}</span>
                     </div>
                     {language === "en" && <Check size={14} className="text-emerald-500" />}
                   </button>
@@ -222,7 +239,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       <div className="w-6 h-4 overflow-hidden border border-slate-100">
                         <DzFlag />
                       </div>
-                      <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">العربية</span>
+                      <span className="text-xs font-bold text-slate-700 uppercase tracking-wider">{t.layoutArabic}</span>
                     </div>
                     {language === "ar" && <Check size={14} className="text-emerald-500" />}
                   </button>
@@ -232,7 +249,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             <div className="h-10 w-px bg-slate-200 mx-2" />
 
-            {/* Simplified User Profile */}
             <div className="flex items-center gap-4 px-4 py-2">
               <div className={isRtl ? "text-left" : "text-right"}>
                 <p className="text-sm font-black text-slate-900 leading-tight mb-1">{user?.username}</p>
@@ -259,6 +275,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </main>
 
       <CookieConsent />
+      <Toast />
     </div>
   );
 }

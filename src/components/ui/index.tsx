@@ -1,5 +1,6 @@
 import React from "react";
 export * from "./Modal";
+export { default as Toast, showToast } from "./Toast";
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "danger" | "ghost";

@@ -27,13 +27,21 @@ export async function POST(req: NextRequest) {
 
   try {
     const { storeId, company, prefix, apiKey, baseUrl } = await req.json();
-    if (!storeId || !prefix || !apiKey) {
+    if (!prefix || !apiKey) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    // Check for duplicate: same storeId (including null meaning "global")
+    const existing = await prisma.ecotrackConfig.findFirst({
+      where: storeId ? { storeId } : { storeId: null },
+    });
+    if (existing) {
+      return NextResponse.json({ error: storeId ? "A config for this store already exists" : "A global config already exists" }, { status: 409 });
     }
 
     const config = await prisma.ecotrackConfig.create({
       data: {
-        storeId,
+        storeId: storeId || null,
         company: company || "ecotrack",
         prefix,
         apiKey,

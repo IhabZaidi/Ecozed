@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import DashboardLayout from "@/components/layout/DashboardLayout";
-import { Button, Input, Modal } from "@/components/ui";
+import { Button, Input, Modal, showToast } from "@/components/ui";
 import { useLanguage } from "@/lib/translations";
 import { useAuthStore } from "@/store/useAuthStore";
 import { 
@@ -156,6 +155,10 @@ export default function ProductsPage() {
     if (res.ok) {
       setIsModalOpen(false);
       fetchProducts();
+      showToast("success", editingProduct ? t.productUpdated : t.productCreated);
+    } else {
+      const err = await res.json().catch(() => ({}));
+      showToast("error", err.error || t.productFailedSave);
     }
     setIsLoading(false);
   };
@@ -168,6 +171,9 @@ export default function ProductsPage() {
       setIsDeleteModalOpen(false);
       setProductToDelete(null);
       fetchProducts();
+      showToast("success", t.productDeleted);
+    } else {
+      showToast("error", t.productFailedDelete);
     }
     setIsLoading(false);
   };
@@ -185,7 +191,7 @@ export default function ProductsPage() {
   };
 
   const handleBulkDelete = async () => {
-    if (!confirm(language === "ar" ? `هل أنت متأكد من حذف ${selectedIds.length} منتجات؟` : `Are you sure you want to delete ${selectedIds.length} products?`)) return;
+    if (!confirm(t.productDeleteBulkConfirm.replace("{count}", String(selectedIds.length)))) return;
     const res = await fetch("/api/products/bulk", {
       method: "POST",
       body: JSON.stringify({ ids: selectedIds, action: "delete" }),
@@ -193,6 +199,9 @@ export default function ProductsPage() {
     if (res.ok) {
       setSelectedIds([]);
       fetchProducts();
+      showToast("success", t.productBulkDeleted.replace("{count}", String(selectedIds.length)));
+    } else {
+      showToast("error", t.productFailedDeleteBulk);
     }
   };
 
@@ -207,6 +216,10 @@ export default function ProductsPage() {
       setSelectedIds([]);
       setIsBulkUpdateOpen(false);
       fetchProducts();
+      showToast("success", t.productBulkUpdated.replace("{count}", String(selectedIds.length)));
+    } else {
+      const err = await res.json().catch(() => ({}));
+      showToast("error", err.error || t.productFailedUpdateBulk);
     }
     setIsLoading(false);
   };
@@ -220,7 +233,7 @@ export default function ProductsPage() {
   const isRtl = language === "ar";
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
           <h2 className="text-2xl font-bold text-slate-900">{t.productsTitle}</h2>
@@ -283,12 +296,10 @@ export default function ProductsPage() {
             <AlertCircle size={24} />
           </div>
           <div className="flex-1">
-             <h4 className="font-black text-amber-900">{isRtl ? "تنبيه: لا يوجد متاجر" : "Warning: No Stores Found"}</h4>
-             <p className="text-amber-700 text-sm">
-               {isRtl 
-                 ? "يجب عليك إنشاء متجر واحد على الأقل لتتمكن من إضافة المنتجات." 
-                 : "You must create at least one store before you can add products."}
-             </p>
+             <h4 className="font-black text-amber-900">{t.productWarningNoStores}</h4>
+              <p className="text-amber-700 text-sm">
+                {t.productWarningNoStoresDesc}
+              </p>
           </div>
           <Button 
             variant="secondary" 
@@ -355,7 +366,7 @@ export default function ProductsPage() {
                             <div className="font-bold text-slate-900">{product.name}</div>
                             <div className="flex items-center gap-1.5 mt-0.5">
                                <div className="px-1.5 py-0.5 rounded bg-slate-50 border border-slate-100 text-[9px] font-black text-slate-400 uppercase tracking-widest">{storeName}</div>
-                               <span className="text-[10px] text-slate-400 font-bold tracking-tight">{product.weight ? `${product.weight} ${isRtl ? "كغ" : "kg"}` : ""}</span>
+                               <span className="text-[10px] text-slate-400 font-bold tracking-tight">{product.weight ? `${product.weight} ${t.productWeightUnit}` : ""}</span>
                             </div>
                           </div>
                         </div>
@@ -366,7 +377,7 @@ export default function ProductsPage() {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-center">
-                        <div className="text-[10px] font-bold text-slate-400 mb-1 leading-none uppercase tracking-widest">{isRtl ? "إجمالي" : "Total"}: {product.cost + product.adsCost + product.extraCharges}</div>
+                        <div className="text-[10px] font-bold text-slate-400 mb-1 leading-none uppercase tracking-widest">{t.productTotal}: {product.cost + product.adsCost + product.extraCharges}</div>
                         <div className="flex items-center justify-center gap-2 text-[9px] font-bold text-slate-400 uppercase tracking-tighter">
                           <span>{t.adsCost}: {product.adsCost}</span>
                           <span className="w-1 h-1 rounded-full bg-slate-200" />
@@ -374,7 +385,7 @@ export default function ProductsPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-center font-black text-slate-900 font-mono">
-                        {product.sellingPrice} <span className="text-[10px] font-normal text-slate-400">{isRtl ? "د.ج" : "DA"}</span>
+                        {product.sellingPrice} <span className="text-[10px] font-normal text-slate-400">{t.currency}</span>
                       </td>
                       <td className="px-6 py-4 text-center">
                         <div className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-black border ${
@@ -458,17 +469,17 @@ export default function ProductsPage() {
                 <div className={`p-5 pt-2 flex-1 flex flex-col ${isRtl ? "text-right" : "text-left"}`}>
                   <div className="mb-4">
                     <h3 className="text-lg font-black text-slate-900 mb-1 leading-tight">{product.name}</h3>
-                    <p className="text-[11px] font-bold text-slate-400 tracking-tight">{product.weight ? `${product.weight} ${isRtl ? "كغ" : "kg"}` : t.weight}</p>
+                    <p className="text-[11px] font-bold text-slate-400 tracking-tight">{product.weight ? `${product.weight} ${t.productWeightUnit}` : t.weight}</p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3 mb-5">
                     <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
-                      <div className="text-[9px] font-black text-slate-400 mb-1 uppercase tracking-widest">{isRtl ? "التكلفة" : "Cost"}</div>
-                      <div className="font-black text-slate-900 text-sm">{(product.cost + product.adsCost + product.extraCharges).toFixed(0)} <span className="text-[10px] font-normal">{isRtl ? "د.ج" : "DA"}</span></div>
+                      <div className="text-[9px] font-black text-slate-400 mb-1 uppercase tracking-widest">{t.productCardCost}</div>
+                      <div className="font-black text-slate-900 text-sm">{(product.cost + product.adsCost + product.extraCharges).toFixed(0)} <span className="text-[10px] font-normal">{t.currency}</span></div>
                     </div>
                     <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
-                      <div className="text-[9px] font-black text-slate-400 mb-1 uppercase tracking-widest">{isRtl ? "السعر" : "Price"}</div>
-                      <div className="font-black text-slate-900 text-sm">{product.sellingPrice} <span className="text-[10px] font-normal">{isRtl ? "د.ج" : "DA"}</span></div>
+                      <div className="text-[9px] font-black text-slate-400 mb-1 uppercase tracking-widest">{t.productCardPrice}</div>
+                      <div className="font-black text-slate-900 text-sm">{product.sellingPrice} <span className="text-[10px] font-normal">{t.currency}</span></div>
                     </div>
                   </div>
 
@@ -521,7 +532,7 @@ export default function ProductsPage() {
             </div>
             <div>
               <h3 className="text-xl font-black text-slate-900 mb-2">{t.noData}</h3>
-              <p className="text-slate-500 text-sm max-w-xs mx-auto">{isRtl ? "لم يتم العثور على أي منتجات في المتاجر المختارة." : "No products found in the selected stores."}</p>
+              <p className="text-slate-500 text-sm max-w-xs mx-auto">{t.productNoProducts}</p>
             </div>
             <Button onClick={handleOpenAdd} className="px-8 py-3 rounded-2xl shadow-xl shadow-slate-900/10">
               <Plus size={20} />
@@ -542,7 +553,7 @@ export default function ProductsPage() {
             <div className="md:col-span-2">
               <Input
                 label={t.productName}
-                placeholder={isRtl ? "أدخل اسم المنتج" : "Enter product name"}
+                placeholder={t.productNamePlaceholder}
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
@@ -581,7 +592,7 @@ export default function ProductsPage() {
             <div className="md:col-span-2">
               <Input
                 label={t.productDescription}
-                placeholder={isRtl ? "أدخل وصف المنتج" : "Enter product description"}
+                placeholder={t.productDescPlaceholder}
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 className="h-12"
@@ -699,7 +710,7 @@ export default function ProductsPage() {
                           }}
                           className="flex-1 h-10 px-3 rounded-lg border border-slate-200 bg-white text-sm font-bold text-left focus:outline-none focus:ring-2 focus:ring-slate-900/5 focus:border-slate-900 transition-all"
                         />
-                        <span className="text-[10px] font-black text-slate-400 w-8">{isRtl ? "د.ج" : "DA"}</span>
+                        <span className="text-[10px] font-black text-slate-400 w-8">{t.currency}</span>
                       </div>
                       <button
                         type="button"
@@ -717,7 +728,7 @@ export default function ProductsPage() {
               )}
               {formData.offers.length === 0 && (
                 <p className="text-[11px] font-bold text-slate-400 text-center py-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                  {isRtl ? "لم يتم إضافة أي عروض بعد" : "No offers added yet"}
+                  {t.productNoOffers}
                 </p>
               )}
             </div>
@@ -730,14 +741,14 @@ export default function ProductsPage() {
                 </div>
                 <div>
                   <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.netProfit}</div>
-                  <div className="text-sm font-bold text-slate-700">{isRtl ? "المتوقع للمنتج" : "Projected per item"}</div>
+                  <div className="text-sm font-bold text-slate-700">{t.productProjectedPerItem}</div>
                 </div>
               </div>
               <div className={`text-2xl font-black ${
                 (parseFloat(formData.sellingPrice || "0") - (parseFloat(formData.cost || "0") + parseFloat(formData.adsCost || "0") + parseFloat(formData.extraCharges || "0"))) > 0 
                 ? "text-emerald-600" : "text-red-600"
               }`}>
-                {(parseFloat(formData.sellingPrice || "0") - (parseFloat(formData.cost || "0") + parseFloat(formData.adsCost || "0") + parseFloat(formData.extraCharges || "0"))).toFixed(0)} <span className="text-xs font-bold opacity-60 uppercase">{isRtl ? "د.ج" : "DA"}</span>
+                {(parseFloat(formData.sellingPrice || "0") - (parseFloat(formData.cost || "0") + parseFloat(formData.adsCost || "0") + parseFloat(formData.extraCharges || "0"))).toFixed(0)} <span className="text-xs font-bold opacity-60 uppercase">{t.currency}</span>
               </div>
           </div>
 
@@ -759,8 +770,8 @@ export default function ProductsPage() {
             <AlertCircle size={40} />
           </div>
           <div className="space-y-2">
-             <h4 className="text-lg font-black text-slate-900">{isRtl ? "هل أنت متأكد من الحذف؟" : "Are you sure?"}</h4>
-             <p className="text-slate-500 text-sm px-10">{isRtl ? "سيتم حذف هذا المنتج نهائياً من قاعدة البيانات. لا يمكن التراجع عن هذا الإجراء." : "This product will be permanently deleted. This action cannot be undone."}</p>
+             <h4 className="text-lg font-black text-slate-900">{t.productDeleteConfirmTitle}</h4>
+             <p className="text-slate-500 text-sm px-10">{t.productDeleteConfirmDesc}</p>
           </div>
           <div className="flex justify-center gap-3 pt-4">
             <Button variant="secondary" onClick={() => setIsDeleteModalOpen(false)} className="h-12 px-8">{t.cancel}</Button>
@@ -784,7 +795,7 @@ export default function ProductsPage() {
                 value={bulkData.status}
                 onChange={(e) => setBulkData({ ...bulkData, status: e.target.value })}
               >
-                <option value="">{isRtl ? "لا يوجد تغيير" : "No change"}</option>
+                <option value="">{t.productNoChange}</option>
                 <option value="DRAFT">{t.draft}</option>
                 <option value="TESTING">{t.testing}</option>
                 <option value="PRODUCTION">{t.production}</option>
@@ -835,6 +846,6 @@ export default function ProductsPage() {
           </div>
         </div>
       )}
-    </DashboardLayout>
+    </>
   );
 }

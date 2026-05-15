@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import DashboardLayout from "@/components/layout/DashboardLayout";
-import { Button, Modal } from "@/components/ui";
+import { Button, Modal, showToast } from "@/components/ui";
 import { useLanguage } from "@/lib/translations";
 import {
   Download,
@@ -58,6 +57,7 @@ export default function SettingsPage() {
   const [shippingFilter, setShippingFilter] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isRestoreModalOpen, setIsRestoreModalOpen] = useState(false);
+  const [syncingProviderId, setSyncingProviderId] = useState<string | null>(null);
   const [restoreFile, setRestoreFile] = useState<File | null>(null);
   const [status, setStatus] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
@@ -108,7 +108,7 @@ export default function SettingsPage() {
     setStatus(null);
     try {
       const res = await fetch("/api/settings/backup");
-      if (!res.ok) throw new Error("Failed to export data");
+      if (!res.ok) throw new Error(t.settingsExportFailed);
       
       const data = await res.json();
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
@@ -155,7 +155,7 @@ export default function SettingsPage() {
 
           if (!res.ok) {
             const err = await res.json();
-            throw new Error(err.error || "Failed to restore data");
+            throw new Error(err.error || t.settingsRestoreFailed);
           }
 
           setStatus({ type: "success", message: t.restoreSuccess });
@@ -168,7 +168,7 @@ export default function SettingsPage() {
       };
       reader.readAsText(restoreFile);
     } catch (error) {
-      setStatus({ type: "error", message: "Failed to read file" });
+      setStatus({ type: "error", message: t.settingsReadFileFailed });
       setIsLoading(false);
     }
   };
@@ -192,7 +192,7 @@ export default function SettingsPage() {
   const [isShippingModalOpen, setIsShippingModalOpen] = useState(false);
   const [editingShippingProvider, setEditingShippingProvider] = useState<any | null>(null);
   const [deleteShippingId, setDeleteShippingId] = useState<string | null>(null);
-  const [shippingForm, setShippingForm] = useState({ storeId: "", prefix: "", apiKey: "", company: "ecotrack", baseUrl: "" });
+  const [shippingForm, setShippingForm] = useState({ storeId: "", prefix: "", apiKey: "", company: "ecotrack", baseUrl: "", useGeneratedKey: true });
   const [showShippingApiKey, setShowShippingApiKey] = useState(false);
   const [testResult, setTestResult] = useState<string | null>(null);
 
@@ -204,12 +204,12 @@ export default function SettingsPage() {
         headers: { "Content-Type": "application/json" }
       });
       if (res.ok) {
-        setStatus({ type: "success", message: isRtl ? "تم تحديث تكاليف الشحن!" : "Shipping costs updated!" });
+        setStatus({ type: "success", message: t.settingsShippingCostsUpdated });
         // Clear status after 3 seconds
         setTimeout(() => setStatus(null), 3000);
       }
     } catch (error) {
-      setStatus({ type: "error", message: "Update failed" });
+      setStatus({ type: "error", message: t.settingsUpdateFailed });
     }
   };
 
@@ -244,12 +244,12 @@ export default function SettingsPage() {
         setIsIntegrationModalOpen(false);
         fetchIntegrations();
         setStatus({ type: "success", message: editingIntegration
-          ? (isRtl ? "تم تحديث الربط بنجاح!" : "Integration updated!")
-          : (isRtl ? "تم إنشاء الربط بنجاح!" : "Integration created!") });
+          ? t.settingsIntegrationUpdated
+          : t.settingsIntegrationCreated });
         setTimeout(() => setStatus(null), 3000);
       } else {
         const err = await res.json();
-        setStatus({ type: "error", message: err.error || "Failed to save" });
+        setStatus({ type: "error", message: err.error || t.settingsSaveFailed });
       }
     } finally {
       setIsLoading(false);
@@ -272,7 +272,7 @@ export default function SettingsPage() {
     if (res.ok) {
       setDeleteIntegrationId(null);
       fetchIntegrations();
-      setStatus({ type: "success", message: isRtl ? "تم الحذف بنجاح" : "Deleted successfully" });
+      setStatus({ type: "success", message: t.settingsDeleted });
       setTimeout(() => setStatus(null), 3000);
     }
     setIsLoading(false);
@@ -297,7 +297,7 @@ export default function SettingsPage() {
   // Shipping provider handlers
   const handleOpenAddShipping = () => {
     setEditingShippingProvider(null);
-    setShippingForm({ storeId: "", prefix: "", apiKey: "", company: "ecotrack", baseUrl: "" });
+    setShippingForm({ storeId: "", prefix: "", apiKey: "", company: "ecotrack", baseUrl: "", useGeneratedKey: true });
     setShowShippingApiKey(false);
     setTestResult(null);
     setIsShippingModalOpen(true);
@@ -311,6 +311,7 @@ export default function SettingsPage() {
       apiKey: provider.apiKey,
       company: provider.company,
       baseUrl: provider.baseUrl,
+      useGeneratedKey: false,
     });
     setShowShippingApiKey(false);
     setTestResult(null);
@@ -339,12 +340,12 @@ export default function SettingsPage() {
         setIsShippingModalOpen(false);
         fetchShippingProvider();
         setStatus({ type: "success", message: editingShippingProvider
-          ? (isRtl ? "تم تحديث شركة الشحن!" : "Shipping provider updated!")
-          : (isRtl ? "تم إضافة شركة الشحن!" : "Shipping provider added!") });
+          ? t.settingsProviderUpdated
+          : t.settingsProviderAdded });
         setTimeout(() => setStatus(null), 3000);
       } else {
         const err = await res.json();
-        setStatus({ type: "error", message: err.error || "Failed to save" });
+        setStatus({ type: "error", message: err.error || t.settingsSaveFailed });
       }
     } finally {
       setIsLoading(false);
@@ -358,7 +359,7 @@ export default function SettingsPage() {
     if (res.ok) {
       setDeleteShippingId(null);
       fetchShippingProvider();
-      setStatus({ type: "success", message: isRtl ? "تم الحذف بنجاح" : "Deleted successfully" });
+      setStatus({ type: "success", message: t.settingsDeleted });
       setTimeout(() => setStatus(null), 3000);
     }
     setIsLoading(false);
@@ -377,28 +378,51 @@ export default function SettingsPage() {
           });
         }
       }
-      setStatus({ type: "success", message: isRtl ? "تم تحديث جميع الولايات المختارة!" : "All selected states updated!" });
+      setStatus({ type: "success", message: t.settingsStatesUpdated });
       setSelectedStates([]);
       fetchShipping();
     } catch (error) {
-      setStatus({ type: "error", message: "Bulk update failed" });
+      setStatus({ type: "error", message: t.settingsBulkUpdateFailed });
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleSyncStopDesk = async (providerId: string) => {
+    setSyncingProviderId(providerId);
+    try {
+      const res = await fetch("/api/settings/shipping/stop-desk-communes/sync", {
+        method: "POST",
+        body: JSON.stringify({ configId: providerId }),
+        headers: { "Content-Type": "application/json" },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        showToast("success", t.settingsCommunesCount.replace("{count}", data.count));
+        fetchShippingProvider();
+      } else {
+        const err = await res.json();
+        showToast("error", err.error || t.settingsSyncFailed);
+      }
+    } catch {
+      showToast("error", t.settingsSyncFailed);
+    } finally {
+      setSyncingProviderId(null);
+    }
+  };
+
   const menuItems = [
-    { id: "general", label: isRtl ? "عام" : "General", icon: Globe },
+    { id: "general", label: t.settingsMenuGeneral, icon: Globe },
     { id: "shipping", label: t.shipping, icon: Truck },
     { id: "integrations", label: t.integrations, icon: Link },
     { id: "shipping-provider", label: t.shippingProvider, icon: Package },
     { id: "backup", label: t.backupTitle, icon: Database },
-    { id: "notifications", label: isRtl ? "الإشعارات" : "Notifications", icon: Bell },
-    { id: "security", label: isRtl ? "الأمان" : "Security", icon: Lock },
+    { id: "notifications", label: t.settingsMenuNotifications, icon: Bell },
+    { id: "security", label: t.settingsMenuSecurity, icon: Lock },
   ];
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Settings Sidebar */}
         <div className="w-full lg:w-72 flex-shrink-0">
@@ -433,7 +457,7 @@ export default function SettingsPage() {
                 <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                   <div>
                     <h3 className="text-2xl font-black text-slate-900 mb-1">{t.shipping}</h3>
-                    <p className="text-slate-500 text-sm">{isRtl ? "تحديد تكاليف الشحن لكل ولاية." : "Set shipping costs for each state."}</p>
+                    <p className="text-slate-500 text-sm">{t.settingsShippingDesc}</p>
                   </div>
                   <div className="relative w-full md:w-64">
                     <Search className={`absolute top-1/2 -translate-y-1/2 text-slate-400 ${isRtl ? "right-3" : "left-3"}`} size={18} />
@@ -578,7 +602,7 @@ export default function SettingsPage() {
                         {selectedStates.length}
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-xs font-black uppercase tracking-widest text-slate-400">{isRtl ? "تم تحديد" : "Selected"}</span>
+                        <span className="text-xs font-black uppercase tracking-widest text-slate-400">{t.selected}</span>
                         <span className="text-sm font-bold">{t.state}</span>
                       </div>
                     </div>
@@ -735,7 +759,7 @@ export default function SettingsPage() {
                               <button
                                 onClick={() => setRevealedKey(revealedKey === integration.id ? null : integration.id)}
                                 className="flex-shrink-0 w-11 h-11 flex items-center justify-center bg-white border border-slate-200 rounded-xl text-slate-500 hover:text-slate-900 hover:border-slate-300 transition-all shadow-sm"
-                                title={revealedKey === integration.id ? (isRtl ? "إخفاء" : "Hide") : (isRtl ? "إظهار" : "Show")}
+                                title={revealedKey === integration.id ? t.settingsHide : t.settingsShow}
                               >
                                 {revealedKey === integration.id ? <EyeOff size={15} /> : <Eye size={15} />}
                               </button>
@@ -780,9 +804,9 @@ export default function SettingsPage() {
                         className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-sm font-bold focus:outline-none focus:ring-4 focus:ring-slate-900/5 focus:border-slate-900 transition-all"
                       >
                         <option value="woocommerce">WooCommerce</option>
-                        <option value="shopify" disabled>{isRtl ? "Shopify (قريباً)" : "Shopify (Coming Soon)"}</option>
-                        <option value="funnel" disabled>{isRtl ? "Funnel (قريباً)" : "Funnel (Coming Soon)"}</option>
-                        <option value="other" disabled>{isRtl ? "أخرى (قريباً)" : "Other (Coming Soon)"}</option>
+                        <option value="shopify" disabled>{t.settingsShopify}</option>
+                        <option value="funnel" disabled>{t.settingsFunnel}</option>
+                        <option value="other" disabled>{t.settingsOther}</option>
                       </select>
                     </div>
 
@@ -795,7 +819,7 @@ export default function SettingsPage() {
                         required
                         disabled={!!editingIntegration}
                       >
-                        <option value="">{isRtl ? "اختر متجراً..." : "Select a store..."}</option>
+                        <option value="">{t.settingsSelectStore}</option>
                         {stores.map((s: any) => (
                           <option key={s.id} value={s.id}>{s.name}</option>
                         ))}
@@ -828,7 +852,7 @@ export default function SettingsPage() {
                         <input
                           type="text"
                           className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-sm font-mono font-bold focus:outline-none focus:ring-4 focus:ring-slate-900/5 focus:border-slate-900 transition-all"
-                          placeholder="sk_..."
+                          placeholder={t.settingsSecretKeyHint}
                           value={integrationForm.apiKey}
                           onChange={(e) => setIntegrationForm({ ...integrationForm, apiKey: e.target.value })}
                           required
@@ -836,7 +860,7 @@ export default function SettingsPage() {
                       )}
                       {integrationForm.useGeneratedKey && (
                         <p className="text-[10px] font-bold text-slate-400">
-                          {isRtl ? "سيتم توليد مفتاح عشوائي آمن تلقائياً" : "A secure random key will be generated automatically"}
+                          {t.settingsAutoGenerateKey}
                         </p>
                       )}
                     </div>
@@ -884,7 +908,7 @@ export default function SettingsPage() {
                             </div>
                             <div>
                               <div className="flex items-center gap-2">
-                                <h4 className="font-black text-slate-900">{provider.store?.name}</h4>
+                                <h4 className="font-black text-slate-900">{provider.storeId ? provider.store?.name : t.allStores}</h4>
                                 <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider ${provider.isActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-500"}`}>
                                   {provider.isActive ? t.shippingProviderActive : t.shippingProviderInactive}
                                 </span>
@@ -921,6 +945,40 @@ export default function SettingsPage() {
                             <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mr-1">{t.shippingApiKey}:</span>
                             <code className="font-mono text-slate-800">{provider.apiKey.substring(0, 12)}...</code>
                           </div>
+                        </div>
+
+                        {/* Stop Desk Sync */}
+                        <div className="mt-4 pt-4 border-t border-slate-200/50">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-xs font-bold text-slate-600">
+                              <RefreshCcw size={12} className="text-slate-400" />
+                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t.stopDesk}</span>
+                              {provider.lastStopDeskSync && (
+                                <span className="text-slate-400 font-normal mr-1">
+                                  {t.settingsLastSync} {new Date(provider.lastStopDeskSync).toLocaleString()}
+                                </span>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => handleSyncStopDesk(provider.id)}
+                              disabled={syncingProviderId === provider.id}
+                              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black transition-all ${
+                                syncingProviderId === provider.id
+                                  ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                                  : "bg-indigo-50 text-indigo-600 hover:bg-indigo-100"
+                              }`}
+                            >
+                              <RefreshCcw size={14} className={syncingProviderId === provider.id ? "animate-spin" : ""} />
+                              {syncingProviderId === provider.id
+                                ? t.settingsSyncing
+                                : t.settingsSyncCommunes}
+                            </button>
+                          </div>
+                          {!provider.lastStopDeskSync && (
+                            <p className="text-xs text-slate-400 mt-2">
+                              {t.settingsNotSynced}
+                            </p>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -962,10 +1020,9 @@ export default function SettingsPage() {
                         className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-sm font-bold focus:outline-none focus:ring-4 focus:ring-slate-900/5 focus:border-slate-900 transition-all"
                         value={shippingForm.storeId}
                         onChange={(e) => setShippingForm({ ...shippingForm, storeId: e.target.value })}
-                        required
                         disabled={!!editingShippingProvider}
                       >
-                        <option value="">{isRtl ? "اختر متجراً..." : "Select a store..."}</option>
+                        <option value="">{t.settingsAllStoresGlobal}</option>
                         {stores.map((s: any) => (
                           <option key={s.id} value={s.id}>{s.name}</option>
                         ))}
@@ -978,7 +1035,7 @@ export default function SettingsPage() {
                         <input
                           type="text"
                           className="flex-1 h-12 px-4 rounded-xl border border-slate-200 bg-white text-sm font-mono font-bold focus:outline-none focus:ring-4 focus:ring-slate-900/5 focus:border-slate-900 transition-all"
-                          placeholder="world-express"
+                          placeholder={t.settingsPrefixPlaceholder}
                           value={shippingForm.prefix}
                           onChange={(e) => setShippingForm({ ...shippingForm, prefix: e.target.value })}
                           required
@@ -989,22 +1046,58 @@ export default function SettingsPage() {
 
                     <div className="space-y-1.5">
                       <label className="text-sm font-bold text-slate-700">{t.shippingApiKey}</label>
+                      <div className="flex items-center gap-2 mb-2">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            checked={shippingForm.useGeneratedKey ?? false}
+                            onChange={() => setShippingForm({ ...shippingForm, useGeneratedKey: true, apiKey: "" })}
+                            className="w-4 h-4 text-slate-900 focus:ring-slate-900"
+                          />
+                          <span className="text-xs font-bold text-slate-600">{t.generateApiKey}</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            checked={!(shippingForm.useGeneratedKey ?? false)}
+                            onChange={() => setShippingForm({ ...shippingForm, useGeneratedKey: false, apiKey: "" })}
+                            className="w-4 h-4 text-slate-900 focus:ring-slate-900"
+                          />
+                          <span className="text-xs font-bold text-slate-600">{t.useCustomKey}</span>
+                        </label>
+                      </div>
                       <div className="relative">
                         <input
                           type={showShippingApiKey ? "text" : "password"}
-                          className="w-full h-12 px-4 rounded-xl border border-slate-200 bg-white text-sm font-mono font-bold focus:outline-none focus:ring-4 focus:ring-slate-900/5 focus:border-slate-900 transition-all"
-                          placeholder="API Key"
+                          className="w-full h-12 px-4 pl-12 rounded-xl border border-slate-200 bg-white text-sm font-mono font-bold focus:outline-none focus:ring-4 focus:ring-slate-900/5 focus:border-slate-900 transition-all"
+                          placeholder={t.settingsApiKeyPlaceholder}
                           value={shippingForm.apiKey}
                           onChange={(e) => setShippingForm({ ...shippingForm, apiKey: e.target.value })}
                           required
                         />
-                        <button
-                          type="button"
-                          onClick={() => setShowShippingApiKey(!showShippingApiKey)}
-                          className={`absolute top-1/2 -translate-y-1/2 ${isRtl ? "left-3" : "right-3"} p-1.5 text-slate-400 hover:text-slate-600 transition-all`}
-                        >
-                          {showShippingApiKey ? <EyeOff size={18} /> : <Eye size={18} />}
-                        </button>
+                        <Key size={16} className={`absolute top-1/2 -translate-y-1/2 ${isRtl ? "right-3" : "left-3"} text-slate-300`} />
+                        <div className={`absolute top-1/2 -translate-y-1/2 ${isRtl ? "left-1" : "right-1"} flex items-center gap-1`}>
+                          {shippingForm.useGeneratedKey && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const key = Array.from({ length: 3 }, () => Math.random().toString(36).substring(2)).join("");
+                                setShippingForm({ ...shippingForm, apiKey: key });
+                              }}
+                              className="p-2 text-xs font-black text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 rounded-lg transition-all"
+                              title={t.generateApiKey}
+                            >
+                              <Key size={16} />
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setShowShippingApiKey(!showShippingApiKey)}
+                            className="p-2 text-slate-400 hover:text-slate-600 transition-all"
+                          >
+                            {showShippingApiKey ? <EyeOff size={18} /> : <Eye size={18} />}
+                          </button>
+                        </div>
                       </div>
                     </div>
 
@@ -1018,7 +1111,7 @@ export default function SettingsPage() {
                         onChange={(e) => setShippingForm({ ...shippingForm, baseUrl: e.target.value })}
                       />
                       <p className="text-[10px] font-bold text-slate-400">
-                        {isRtl ? "اتركه فارغاً لاستخدام الرابط الافتراضي" : "Leave empty to use default URL from prefix"}
+                        {t.settingsDefaultUrlHint}
                       </p>
                     </div>
                   </div>
@@ -1051,7 +1144,7 @@ export default function SettingsPage() {
                       </div>
                       <h4 className="text-lg font-black text-slate-900 mb-2">{t.exportData}</h4>
                       <p className="text-sm text-slate-500 mb-6 leading-relaxed">
-                        {isRtl ? "قم بتنزيل نسخة كاملة من بيانات النظام." : "Download a full system data snapshot."}
+                        {t.settingsBackupDescFull}
                       </p>
                       <Button onClick={handleExport} isLoading={isLoading} className="w-full h-12 rounded-xl">
                         {t.exportData}
@@ -1065,7 +1158,7 @@ export default function SettingsPage() {
                       </div>
                       <h4 className="text-lg font-black text-slate-900 mb-2">{t.importData}</h4>
                       <p className="text-sm text-slate-500 mb-6 leading-relaxed">
-                        {isRtl ? "استرجع البيانات من ملف نسخة احتياطية." : "Restore system data from a backup file."}
+                        {t.settingsRestoreDescFull}
                       </p>
                       <div className="relative">
                         <input
@@ -1089,11 +1182,9 @@ export default function SettingsPage() {
                   <ShieldCheck size={24} />
                 </div>
                 <div>
-                  <h4 className="text-lg font-black text-amber-900 mb-1">{isRtl ? "نصيحة أمنية" : "Security Tip"}</h4>
+                  <h4 className="text-lg font-black text-amber-900 mb-1">{t.settingsSecurityTip}</h4>
                   <p className="text-amber-700 text-sm leading-relaxed">
-                    {isRtl 
-                      ? "احتفظ بنسخك الاحتياطية في مكان آمن. تحتوي هذه الملفات على جميع بيانات المتاجر والطلبات الخاصة بك." 
-                      : "Keep your backups in a secure location. These files contain all your store and order data."}
+                    {t.settingsSecurityTipDesc}
                   </p>
                 </div>
               </div>
@@ -1109,7 +1200,7 @@ export default function SettingsPage() {
                  {menuItems.find(i => i.id === activeSection)?.label}
                </h3>
                <p className="text-slate-500">
-                 {isRtl ? "هذا القسم قيد التطوير وسيتم تفعيله قريباً." : "This section is under development and will be active soon."}
+                 {t.settingsUnderDevelopment}
                </p>
             </div>
           )}
@@ -1133,7 +1224,7 @@ export default function SettingsPage() {
             <RefreshCcw size={40} />
           </div>
           <div className="space-y-2 px-6">
-            <h4 className="text-xl font-black text-slate-900">{isRtl ? "تأكيد استعادة البيانات" : "Confirm Restore"}</h4>
+            <h4 className="text-xl font-black text-slate-900">{t.settingsConfirmRestore}</h4>
             <p className="text-slate-500 text-sm">{t.restoreWarning}</p>
           </div>
           <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-center justify-between mx-8">
@@ -1145,10 +1236,10 @@ export default function SettingsPage() {
           </div>
           <div className="flex justify-center gap-3 pt-4">
             <Button variant="secondary" onClick={() => setIsRestoreModalOpen(false)} className="h-12 px-8">{t.cancel}</Button>
-            <Button variant="danger" onClick={handleRestore} isLoading={isLoading} className="h-12 px-10 shadow-lg shadow-red-200">{isRtl ? "ابدأ الاستعادة" : "Start Restore"}</Button>
+            <Button variant="danger" onClick={handleRestore} isLoading={isLoading} className="h-12 px-10 shadow-lg shadow-red-200">{t.settingsStartRestore}</Button>
           </div>
         </div>
       </Modal>
-    </DashboardLayout>
+    </>
   );
 }

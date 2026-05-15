@@ -1,0 +1,292 @@
+[
+  {
+    "code": "01",
+    "name_ar": "أدرار",
+    "name_latin": "Adrar"
+  },
+  {
+    "code": "02",
+    "name_ar": " الشلف",
+    "name_latin": "Chlef"
+  },
+  {
+    "code": "03",
+    "name_ar": "الأغواط",
+    "name_latin": "Laghouat"
+  },
+  {
+    "code": "04",
+    "name_ar": "أم البواقي",
+    "name_latin": "Oum El Bouaghi"
+  },
+  {
+    "code": "05",
+    "name_ar": "باتنة",
+    "name_latin": "Batna"
+  },
+  {
+    "code": "06",
+    "name_ar": " بجاية",
+    "name_latin": "Béjaïa"
+  },
+  {
+    "code": "07",
+    "name_ar": "بسكرة",
+    "name_latin": "Biskra"
+  },
+  {
+    "code": "08",
+    "name_ar": "بشار",
+    "name_latin": "Béchar"
+  },
+  {
+    "code": "09",
+    "name_ar": "البليدة",
+    "name_latin": "Blida"
+  },
+  {
+    "code": "10",
+    "name_ar": "البويرة",
+    "name_latin": "Bouira"
+  },
+  {
+    "code": "11",
+    "name_ar": "تمنراست",
+    "name_latin": "Tamanrasset"
+  },
+  {
+    "code": "12",
+    "name_ar": "تبسة",
+    "name_latin": "Tébessa"
+  },
+  {
+    "code": "13",
+    "name_ar": "تلمسان",
+    "name_latin": "Tlemcen"
+  },
+  {
+    "code": "14",
+    "name_ar": "تيارت",
+    "name_latin": "Tiaret"
+  },
+  {
+    "code": "15",
+    "name_ar": "تيزي وزو",
+    "name_latin": "Tizi Ouzou"
+  },
+  {
+    "code": "16",
+    "name_ar": "الجزائر",
+    "name_latin": "Alger"
+  },
+  {
+    "code": "17",
+    "name_ar": "الجلفة",
+    "name_latin": "Djelfa"
+  },
+  {
+    "code": "18",
+    "name_ar": "جيجل",
+    "name_latin": "Jijel"
+  },
+  {
+    "code": "19",
+    "name_ar": "سطيف",
+    "name_latin": "Sétif"
+  },
+  {
+    "code": "20",
+    "name_ar": "سعيدة",
+    "name_latin": "Saïda"
+  },
+  {
+    "code": "21",
+    "name_ar": "سكيكدة",
+    "name_latin": "Skikda"
+  },
+  {
+    "code": "22",
+    "name_ar": "سيدي بلعباس",
+    "name_latin": "Sidi Bel Abbès"
+  },
+  {
+    "code": "23",
+    "name_ar": "عنابة",
+    "name_latin": "Annaba"
+  },
+  {
+    "code": "24",
+    "name_ar": "قالمة",
+    "name_latin": "Guelma"
+  },
+  {
+    "code": "25",
+    "name_ar": "قسنطينة",
+    "name_latin": "Constantine"
+  },
+  {
+    "code": "26",
+    "name_ar": "المدية",
+    "name_latin": "Médéa"
+  },
+  {
+    "code": "27",
+    "name_ar": "مستغانم",
+    "name_latin": "Mostaganem"
+  },
+  {
+    "code": "28",
+    "name_ar": "المسيلة",
+    "name_latin": "M'Sila"
+  },
+  {
+    "code": "29",
+    "name_ar": "معسكر",
+    "name_latin": "Mascara"
+  },
+  {
+    "code": "30",
+    "name_ar": "ورقلة",
+    "name_latin": "Ouargla"
+  },
+  {
+    "code": "31",
+    "name_ar": "وهران",
+    "name_latin": "Oran"
+  },
+  {
+    "code": "32",
+    "name_ar": "البيض",
+    "name_latin": "El Bayadh"
+  },
+  {
+    "code": "33",
+    "name_ar": "إليزي",
+    "name_latin": "Illizi"
+  },
+  {
+    "code": "34",
+    "name_ar": "برج بوعريريج",
+    "name_latin": "Bordj Bou Arreridj"
+  },
+  {
+    "code": "35",
+    "name_ar": "بومرداس",
+    "name_latin": "Boumerdès"
+  },
+  {
+    "code": "36",
+    "name_ar": "الطارف",
+    "name_latin": "El Tarf"
+  },
+  {
+    "code": "37",
+    "name_ar": "تندوف",
+    "name_latin": "Tindouf"
+  },
+  {
+    "code": "38",
+    "name_ar": "تيسمسيلت",
+    "name_latin": "Tissemsilt"
+  },
+  {
+    "code": "39",
+    "name_ar": "الوادي",
+    "name_latin": "El Oued"
+  },
+  {
+    "code": "40",
+    "name_ar": "خنشلة",
+    "name_latin": "Khenchela"
+  },
+  {
+    "code": "41",
+    "name_ar": "سوق أهراس",
+    "name_latin": "Souk Ahras"
+  },
+  {
+    "code": "42",
+    "name_ar": "تيبازة",
+    "name_latin": "Tipaza"
+  },
+  {
+    "code": "43",
+    "name_ar": "ميلة",
+    "name_latin": "Mila"
+  },
+  {
+    "code": "44",
+    "name_ar": "عين الدفلة",
+    "name_latin": "Aïn Defla"
+  },
+  {
+    "code": "45",
+    "name_ar": "النعامة",
+    "name_latin": "Naâma"
+  },
+  {
+    "code": "46",
+    "name_ar": "عين تيموشنت",
+    "name_latin": "Aïn Témouchent"
+  },
+  {
+    "code": "47",
+    "name_ar": "غرداية",
+    "name_latin": "Ghardaïa"
+  },
+  {
+    "code": "48",
+    "name_ar": "غليزان",
+    "name_latin": "Relizane"
+  },
+  {
+    "code": "49",
+    "name_ar": "تيميمون",
+    "name_latin": "Timimoun"
+  },
+  {
+    "code": "50",
+    "name_ar": "برج باجي مختار",
+    "name_latin": "Bordj Badji Mokhtar"
+  },
+  {
+    "code": "51",
+    "name_ar": "أولاد جلال",
+    "name_latin": "Ouled Djellal"
+  },
+  {
+    "code": "52",
+    "name_ar": "بني عباس",
+    "name_latin": "Béni Abbès"
+  },
+  {
+    "code": "53",
+    "name_ar": "عين صالح",
+    "name_latin": "In Salah"
+  },
+  {
+    "code": "54",
+    "name_ar": "عين قزام",
+    "name_latin": "In Guezzam"
+  },
+  {
+    "code": "55",
+    "name_ar": "تقرت",
+    "name_latin": "Touggourt"
+  },
+  {
+    "code": "56",
+    "name_ar": "جانت",
+    "name_latin": "Djanet"
+  },
+  {
+    "code": "57",
+    "name_ar": "المغير",
+    "name_latin": "El Meghaier"
+  },
+  {
+    "code": "58",
+    "name_ar": "المنيعة",
+    "name_latin": "El Menia"
+  }
+]

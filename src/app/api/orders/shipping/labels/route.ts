@@ -36,9 +36,15 @@ export async function POST(req: NextRequest) {
     // Fetch all labels from Ecotrack, grouped by store
     const pdfBuffers: Uint8Array[] = [];
     for (const [storeId, storeOrds] of storeOrders) {
-      const config = await prisma.ecotrackConfig.findFirst({
+      // Try store-specific config, then fall back to global (storeId: null)
+      let config = await prisma.ecotrackConfig.findFirst({
         where: { storeId, isActive: true },
       });
+      if (!config) {
+        config = await prisma.ecotrackConfig.findFirst({
+          where: { storeId: null, isActive: true },
+        });
+      }
 
       if (!config) {
         console.error(`[POST /api/orders/shipping/labels] No config for store ${storeId}, skipping ${storeOrds.length} orders`);
@@ -46,12 +52,12 @@ export async function POST(req: NextRequest) {
       }
 
       for (const order of storeOrds) {
-        const labelUrl = `${config.baseUrl}/api/v1/get/order/label?tracking=${order.ecotrackRef}`;
+        const labelUrl = `${config.baseUrl.replace(/\/+$/, "")}/api/v1/get/order/label?tracking=${order.ecotrackRef}`;
         console.log("[POST /api/orders/shipping/labels] Fetching label:", labelUrl);
 
         try {
           const apiRes = await fetch(labelUrl, {
-            headers: { "x-api-key": config.apiKey },
+            headers: { "Authorization": `Bearer ${config.apiKey}` },
           });
           if (apiRes.ok) {
             const buf = await apiRes.arrayBuffer();

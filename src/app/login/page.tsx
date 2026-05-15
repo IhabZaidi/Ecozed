@@ -12,10 +12,10 @@ export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isChecking, setIsChecking] = useState(true);
   const [error, setError] = useState("");
-  
+
   const router = useRouter();
+  const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
 
   useEffect(() => {
@@ -23,24 +23,12 @@ export default function LoginPage() {
     document.documentElement.lang = language;
   }, [language]);
 
-  // Redirect to dashboard if already authenticated
+  // If user is already in the persisted store, redirect immediately
   useEffect(() => {
-    async function checkAuth() {
-      try {
-        const res = await fetch("/api/auth/me");
-        if (res.ok) {
-          const data = await res.json();
-          setUser(data.user);
-          router.push("/dashboard");
-        }
-      } catch {
-        // Not authenticated, stay on login
-      } finally {
-        setIsChecking(false);
-      }
+    if (user) {
+      router.push("/dashboard");
     }
-    checkAuth();
-  }, []);
+  }, [user, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,28 +58,13 @@ export default function LoginPage() {
 
   const isRtl = language === "ar";
 
-  if (isChecking) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="text-center">
-          <div className="w-20 h-20 bg-slate-900 rounded-[28px] flex items-center justify-center text-white shadow-2xl shadow-slate-900/10 mx-auto mb-8">
-            <Package size={40} />
-          </div>
-          <div className="flex items-center justify-center gap-1.5 mb-4">
-            <div className="w-3 h-3 bg-slate-900 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-            <div className="w-3 h-3 bg-slate-900 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-            <div className="w-3 h-3 bg-slate-900 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-          </div>
-          <p className="text-sm font-bold text-slate-400 tracking-wider uppercase">{isRtl ? "جارٍ التحقق..." : "Checking credentials..."}</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className={`min-h-screen flex items-center justify-center p-4 bg-slate-50 ${isRtl ? "font-cairo" : ""}`}>
+    <div className={`min-h-screen flex items-center justify-center p-4 bg-slate-50 ${isRtl ? "font-cairo" : ""}`} dir={isRtl ? "rtl" : "ltr"}>
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl shadow-slate-200/50 p-8 border border-slate-100">
         <div className="text-center mb-8">
+          <div className="w-16 h-16 bg-slate-900 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-slate-900/10">
+            <Package size={32} className="text-white" />
+          </div>
           <h1 className="text-2xl font-bold text-slate-900 mb-2">{t.login}</h1>
           <p className="text-slate-500 text-sm">{t.welcomeBack}</p>
         </div>

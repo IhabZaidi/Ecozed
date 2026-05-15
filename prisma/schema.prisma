@@ -165,15 +165,29 @@ model Integration {
 
 model EcotrackConfig {
   id        String   @id @default(cuid())
-  storeId   String
-  store     Store    @relation(fields: [storeId], references: [id])
-  company   String   @default("ecotrack") // e.g. "ecotrack"
-  prefix    String   // e.g. "world-express"
+  storeId   String?  // null = global (works for all stores)
+  store     Store?   @relation(fields: [storeId], references: [id])
+  company   String   @default("ecotrack")
+  prefix    String
   apiKey    String
-  baseUrl   String   // e.g. "https://world-express.ecotrack.dz"
+  baseUrl   String
   isActive  Boolean  @default(true)
+  lastStopDeskSync DateTime?
+  stopDeskCommunes  StopDeskCommune[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
 
-  @@unique([storeId, company])
+model StopDeskCommune {
+  id         String   @id @default(cuid())
+  nom        String
+  wilayaId   Int
+  codePostal String?
+  hasStopDesk Boolean @default(false)
+  configId   String
+  config     EcotrackConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([configId, wilayaId, nom])
 }

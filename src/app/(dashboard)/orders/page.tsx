@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import DashboardLayout from "@/components/layout/DashboardLayout";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button, Input, Modal } from "@/components/ui";
 import { useLanguage } from "@/lib/translations";
 import { useAuthStore } from "@/store/useAuthStore";
+import { showToast } from "@/components/ui";
 import { 
   Plus, 
   Search, 
@@ -36,7 +36,9 @@ import {
   Store as StoreIcon,
   UserCheck,
   Shield,
-  Printer
+  Printer,
+  FileText,
+  ChevronDown
 } from "lucide-react";
 
 interface Product {
@@ -92,6 +94,9 @@ export default function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [shippingConfigs, setShippingConfigs] = useState<any[]>([]);
+  const [shippingProviders, setShippingProviders] = useState<any[]>([]);
+  const [communes, setCommunes] = useState<any[]>([]);
+  const [wilayas, setWilayas] = useState<any[]>([]);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -100,6 +105,22 @@ export default function OrdersPage() {
 
   // Multi-selection state
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  const [communeSearch, setCommuneSearch] = useState("");
+  const [communeDropdownOpen, setCommuneDropdownOpen] = useState(false);
+  const communeRef = useRef<HTMLDivElement>(null);
+  const [stopDeskCommunes, setStopDeskCommunes] = useState<Set<string> | null>(null);
+  const [loadingStopDesk, setLoadingStopDesk] = useState(false);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (communeRef.current && !communeRef.current.contains(e.target as Node)) {
+        setCommuneDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const [formData, setFormData] = useState({
     clientName: "",
@@ -121,27 +142,63 @@ export default function OrdersPage() {
     upsellQuantity: "",
   });
 
+  const stateCodeMap = Object.fromEntries(shippingConfigs.map(c => [c.stateName, c.stateCode]));
+  const selectedWilayaCode = formData.state ? stateCodeMap[formData.state] || "" : "";
+  const filteredCommunes = communes.filter(c => {
+    if (c.wilaya_code !== selectedWilayaCode) return false;
+    if (formData.shippingType === "STOP_DESK" && stopDeskCommunes) {
+      if (!stopDeskCommunes.has(c.commune_latin)) return false;
+    }
+    if (communeSearch && !c.commune_ar.includes(communeSearch) && !c.commune_latin.toLowerCase().includes(communeSearch.toLowerCase())) return false;
+    return true;
+  });
+  const selectedCommune = formData.city
+    ? communes.find(c => c.commune_latin === formData.city || c.commune_ar === formData.city)
+    : null;
+
+  const fetchStopDeskCommunes = async (wilayaCode: string) => {
+    setLoadingStopDesk(true);
+    try {
+      const res = await fetch(`/api/settings/shipping/stop-desk-communes?wilayaId=${wilayaCode}`);
+      if (res.ok) {
+        const data = await res.json();
+        const names = new Set<string>(
+          (data.communes || [])
+            .filter((c: any) => c.hasStopDesk === true)
+            .map((c: any) => (c.communeLatin || c.nom) as string)
+        );
+        setStopDeskCommunes(names);
+      } else {
+        setStopDeskCommunes(new Set<string>());
+      }
+    } catch {
+      setStopDeskCommunes(new Set<string>());
+    } finally {
+      setLoadingStopDesk(false);
+    }
+  };
+
   const isRtl = language === "ar";
 
   const statusOptions = [
-    { value: "PENDING", label: isRtl ? "قيد الانتظار" : "Pending", icon: Clock, color: "bg-amber-50 text-amber-600 border-amber-100" },
-    { value: "CONFIRMED", label: isRtl ? "تم التأكيد" : "Confirmed", icon: CheckCircle2, color: "bg-blue-50 text-blue-600 border-blue-100" },
+    { value: "PENDING", label: t.statusPending, icon: Clock, color: "bg-amber-50 text-amber-600 border-amber-100" },
+    { value: "CONFIRMED", label: t.statusConfirmed, icon: CheckCircle2, color: "bg-blue-50 text-blue-600 border-blue-100" },
     { value: "NO_ANSWER", label: t.noAnswer, icon: PhoneOff, color: "bg-orange-50 text-orange-600 border-orange-100" },
     { value: "BUSY", label: t.busy, icon: PhoneCall, color: "bg-purple-50 text-purple-600 border-purple-100" },
     { value: "PHONE_CLOSED", label: t.phoneClosed, icon: Smartphone, color: "bg-slate-50 text-slate-600 border-slate-100" },
-    { value: "CANCELED", label: isRtl ? "ملغي" : "Canceled", icon: XCircle, color: "bg-red-50 text-red-600 border-red-100" },
-    { value: "DELIVERED", label: isRtl ? "تم التسليم" : "Delivered", icon: Truck, color: "bg-emerald-50 text-emerald-600 border-emerald-100" },
-    { value: "RETURNED", label: isRtl ? "مسترجع" : "Returned", icon: RotateCcw, color: "bg-slate-50 text-slate-600 border-slate-100" },
+    { value: "CANCELED", label: t.statusCanceled, icon: XCircle, color: "bg-red-50 text-red-600 border-red-100" },
+    { value: "DELIVERED", label: t.statusDelivered, icon: Truck, color: "bg-emerald-50 text-emerald-600 border-emerald-100" },
+    { value: "RETURNED", label: t.statusReturned, icon: RotateCcw, color: "bg-slate-50 text-slate-600 border-slate-100" },
   ];
 
   const filterOptions = [
-    { value: null, label: isRtl ? "الكل" : "All", icon: null, color: "bg-slate-100 text-slate-700 border-slate-200" },
-    { value: "PENDING", label: isRtl ? "قيد الانتظار" : "Pending", icon: Clock, color: "bg-amber-50 text-amber-600 border-amber-100" },
-    { value: "NEED_CONTACT", label: isRtl ? "تحت الاتصال" : "Need Contact", icon: PhoneCall, color: "bg-purple-50 text-purple-600 border-purple-100" },
-    { value: "CONFIRMED", label: isRtl ? "قيد المعالجة" : "Processing", icon: CheckCircle2, color: "bg-blue-50 text-blue-600 border-blue-100" },
-    { value: "DELIVERED", label: isRtl ? "تم التسليم" : "Delivered", icon: Truck, color: "bg-emerald-50 text-emerald-600 border-emerald-100" },
-    { value: "RETURNED", label: isRtl ? "مسترجع" : "Returned", icon: RotateCcw, color: "bg-slate-50 text-slate-600 border-slate-100" },
-    { value: "CANCELED", label: isRtl ? "ملغي" : "Canceled", icon: XCircle, color: "bg-red-50 text-red-600 border-red-100" },
+    { value: null, label: t.filterAll, icon: null, color: "bg-slate-100 text-slate-700 border-slate-200" },
+    { value: "PENDING", label: t.statusPending, icon: Clock, color: "bg-amber-50 text-amber-600 border-amber-100" },
+    { value: "NEED_CONTACT", label: t.filterNeedContact, icon: PhoneCall, color: "bg-purple-50 text-purple-600 border-purple-100" },
+    { value: "CONFIRMED", label: t.filterProcessing, icon: CheckCircle2, color: "bg-blue-50 text-blue-600 border-blue-100" },
+    { value: "DELIVERED", label: t.statusDelivered, icon: Truck, color: "bg-emerald-50 text-emerald-600 border-emerald-100" },
+    { value: "RETURNED", label: t.statusReturned, icon: RotateCcw, color: "bg-slate-50 text-slate-600 border-slate-100" },
+    { value: "CANCELED", label: t.statusCanceled, icon: XCircle, color: "bg-red-50 text-red-600 border-red-100" },
   ];
 
   const fetchOrders = async () => {
@@ -158,7 +215,6 @@ export default function OrdersPage() {
   };
 
   const fetchProducts = async () => {
-    // Fetch all products allowed for the user to help with the modal store-product relation
     const userStoreIds = (user?.stores || []).map(s => s.id).join(",");
     const res = await fetch(`/api/products?storeIds=${userStoreIds}`);
     if (res.ok) {
@@ -172,6 +228,21 @@ export default function OrdersPage() {
     if (res.ok) setShippingConfigs(await res.json());
   };
 
+  const fetchShippingProviders = async () => {
+    const res = await fetch("/api/settings/shipping-provider");
+    if (res.ok) setShippingProviders(await res.json());
+  };
+
+  const fetchCommunes = async (wilayaCode?: string) => {
+    const params = wilayaCode ? `?wilayaCode=${wilayaCode}` : "";
+    const res = await fetch(`/api/settings/communes${params}`);
+    if (res.ok) {
+      const data = await res.json();
+      setCommunes(data.communes);
+      if (!wilayaCode) setWilayas(data.wilayas);
+    }
+  };
+
   useEffect(() => {
     if (activeStoreIds.length > 0) {
       fetchOrders();
@@ -180,6 +251,8 @@ export default function OrdersPage() {
     }
     fetchProducts();
     fetchShipping();
+    fetchShippingProviders();
+    fetchCommunes();
   }, [activeStoreIds]);
 
   useEffect(() => {
@@ -187,10 +260,26 @@ export default function OrdersPage() {
       const config = shippingConfigs.find(c => c.stateName === formData.state);
       if (config) {
         const cost = formData.shippingType === "HOME" ? config.homeCost : config.stopDeskCost;
-        setFormData(prev => ({ ...prev, shippingCost: cost }));
+        setFormData(prev => {
+          const cityStillValid = !prev.city || communes.some(c => c.wilaya_code === config.stateCode && (c.commune_latin === prev.city || c.commune_ar === prev.city));
+          return {
+            ...prev,
+            shippingCost: cost,
+            city: cityStillValid ? prev.city : "",
+          };
+        });
       }
     }
-  }, [formData.state, formData.shippingType, shippingConfigs]);
+  }, [formData.state, formData.shippingType, shippingConfigs, communes]);
+
+  useEffect(() => {
+    if (formData.shippingType === "STOP_DESK" && formData.state) {
+      const config = shippingConfigs.find(c => c.stateName === formData.state);
+      if (config) fetchStopDeskCommunes(config.stateCode);
+    } else {
+      setStopDeskCommunes(null);
+    }
+  }, [formData.shippingType, formData.state, shippingConfigs]);
 
   const handleOpenAdd = () => {
     setEditingOrder(null);
@@ -245,6 +334,11 @@ export default function OrdersPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.state || !formData.city || !formData.address) {
+      showToast("error", t.orderRequiredFields);
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     const method = editingOrder ? "PUT" : "POST";
     const url = editingOrder ? `/api/orders/${editingOrder.id}` : "/api/orders";
@@ -304,11 +398,17 @@ export default function OrdersPage() {
         headers: { "Content-Type": "application/json" },
       });
       if (res.ok) {
+        const data = await res.json();
         setSelectedIds([]);
         fetchOrders();
+        showToast("success", `${data.validated} ${t.orders} ${t.validateSuccess}`);
       } else {
         const err = await res.json();
-        alert(err.error || "Failed to dispatch");
+        if (err.rateLimited) {
+          showToast("error", isRtl ? "تم تجاوز الحد المسموح من الطلبات. الرجاء الانتظار والمحاولة مرة أخرى." : err.error);
+        } else {
+          showToast("error", err.error || t.orderFailedDispatch);
+        }
       }
     } finally {
       setIsLoading(false);
@@ -324,11 +424,13 @@ export default function OrdersPage() {
         headers: { "Content-Type": "application/json" },
       });
       if (res.ok) {
+        const data = await res.json();
         setSelectedIds([]);
         fetchOrders();
+        showToast("success", `${data.count} ${t.orders} ${t.sentSuccess}`);
       } else {
         const err = await res.json();
-        alert(err.error || "Failed to send to shipping");
+        showToast("error", err.error || t.orderFailedSend);
       }
     } finally {
       setIsLoading(false);
@@ -352,10 +454,10 @@ export default function OrdersPage() {
         document.body.removeChild(a);
       } else {
         const err = await res.json();
-        alert(err.error || "Failed to get label");
+        showToast("error", err.error || t.orderFailedLabel);
       }
     } catch {
-      alert("Failed to download label");
+      showToast("error", t.orderFailedLabelDownload);
     }
   };
 
@@ -369,9 +471,13 @@ export default function OrdersPage() {
       });
       if (res.ok) {
         const data = await res.json();
+        showToast("success", t.syncTrackingSuccess.replace("{updated}", String(data.updated)).replace("{total}", String(data.total)));
         if (data.updated > 0) {
           fetchOrders();
         }
+      } else {
+        const err = await res.json();
+        showToast("error", err.error || t.orderFailedSync);
       }
     } finally {
       setIsLoading(false);
@@ -388,10 +494,14 @@ export default function OrdersPage() {
       });
       if (res.ok) {
         const data = await res.json();
+        showToast("success", t.syncTrackingSuccess.replace("{updated}", String(data.updated)).replace("{total}", String(data.total)));
         if (data.updated > 0) {
           setSelectedIds([]);
           fetchOrders();
         }
+      } else {
+        const err = await res.json();
+        showToast("error", err.error || t.orderFailedSync);
       }
     } finally {
       setIsLoading(false);
@@ -422,12 +532,49 @@ export default function OrdersPage() {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
+        showToast("success", t.orderLabelsDownloaded.replace("{count}", String(trackedIds.length)));
       } else {
         const err = await res.json();
-        alert(err.error || "Failed to get combined labels");
+        showToast("error", err.error || t.orderFailedLabels);
       }
     } catch {
-      alert("Failed to download labels");
+      showToast("error", t.orderFailedLabelsDownload);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePrintBordereau = async () => {
+    const sentIds = selectedIds.filter(id => {
+      const order = orders.find(o => o.id === id);
+      return order?.sentToEcotrack && order?.ecotrackRef;
+    });
+    if (sentIds.length === 0) return;
+
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/orders/shipping/bordereau", {
+        method: "POST",
+        body: JSON.stringify({ ids: sentIds }),
+        headers: { "Content-Type": "application/json" },
+      });
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `bordereau-${sentIds.length}-orders.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        showToast("success", `${t.printBordereau} - ${sentIds.length} ${t.orders}`);
+      } else {
+        const err = await res.json();
+        showToast("error", err.error || t.orderFailedBordereau);
+      }
+    } catch {
+      showToast("error", t.orderFailedBordereau);
     } finally {
       setIsLoading(false);
     }
@@ -477,7 +624,7 @@ export default function OrdersPage() {
   const filteredProductsForModal = products.filter(p => p.storeId === formData.storeId);
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8">
         <div>
           <h2 className="text-2xl font-black text-slate-900 tracking-tight">{t.ordersTitle}</h2>
@@ -568,14 +715,14 @@ export default function OrdersPage() {
           </div>
           <h3 className="text-xl font-black text-slate-900 mb-2">
             {statusFilter || filter
-              ? (isRtl ? "لا توجد طلبات مطابقة" : "No matching orders")
+              ? t.orderNoMatching
               : t.noOrders}
           </h3>
           <p className="text-slate-500 text-sm max-w-xs mx-auto mb-8">
             {activeStoreIds.length === 0
-              ? (isRtl ? "يرجى اختيار متجر لعرض الطلبات." : "Please select a store to view orders.")
+              ? t.orderSelectStore
               : statusFilter || filter
-                ? (isRtl ? "حاول تغيير الفلتر أو البحث" : "Try changing the filter or search")
+                ? t.orderTryChangeFilter
                 : t.noOrdersDesc}
           </p>
           {!statusFilter && !filter && (
@@ -615,8 +762,8 @@ export default function OrdersPage() {
                   const isSelected = selectedIds.includes(order.id);
                   const storeName = user?.stores.find(s => s.id === order.storeId)?.name;
 
-                  return (
-                    <tr key={order.id} className={`hover:bg-slate-50/80 transition-colors group ${isSelected ? "bg-indigo-50/30" : ""}`}>
+                   return (
+                     <tr key={order.id} className={`hover:bg-slate-50/80 transition-colors group ${isSelected ? "bg-indigo-50/30" : ""}`}>
                       <td className="px-6 py-4">
                         <button onClick={() => toggleSelect(order.id)} className="text-slate-300 hover:text-indigo-600 transition-colors">
                           {isSelected ? <CheckSquare size={20} className="text-indigo-600" /> : <Square size={20} />}
@@ -650,7 +797,7 @@ export default function OrdersPage() {
                         <span className="px-3 py-1 bg-slate-100 text-slate-900 rounded-lg text-xs font-black">x{order.quantity}</span>
                       </td>
                       <td className="px-6 py-4 text-center">
-                         <span className="text-sm font-black text-slate-900">{revenue.toFixed(0)} {isRtl ? "د.ج" : "DA"}</span>
+                         <span className="text-sm font-black text-slate-900">{revenue.toFixed(0)} {t.currency}</span>
                       </td>
                       {user?.role === "ADMIN" && (
                         <td className="px-6 py-4 text-center">
@@ -658,7 +805,7 @@ export default function OrdersPage() {
                             realProfit > 0 ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-red-50 text-red-600 border-red-100"
                           }`}>
                             <TrendingUp size={12} className={realProfit > 0 ? "" : "rotate-180"} />
-                            {realProfit.toFixed(0)} {isRtl ? "د.ج" : "DA"}
+                            {realProfit.toFixed(0)} {t.currency}
                           </div>
                         </td>
                       )}
@@ -679,6 +826,10 @@ export default function OrdersPage() {
                         <div className={`flex gap-1 ${isRtl ? "justify-end" : "justify-start"}`}>
                           {order.ecotrackRef && (
                             <>
+                              <span className="px-2 py-1 rounded-lg text-[8px] font-black leading-none bg-blue-100 text-blue-700 border border-blue-200">
+                                <PackageIcon size={10} className="inline mr-0.5" />
+                                {t.sentToShipping}
+                              </span>
                               <button 
                                 onClick={() => handlePrintLabel(order.id)}
                                 className="p-2.5 text-blue-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all border border-transparent hover:border-blue-100"
@@ -742,10 +893,18 @@ export default function OrdersPage() {
                 </button>
 
                 <div className={`flex justify-between items-start mb-6 ${isRtl ? "flex-row" : "flex-row-reverse"}`}>
-                   <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-wider ${currentStatus?.color}`}>
-                    {currentStatus && <currentStatus.icon size={12} />}
-                    {currentStatus?.label}
-                  </div>
+                   <div className="flex items-center gap-2">
+                     <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-wider ${currentStatus?.color}`}>
+                       {currentStatus && <currentStatus.icon size={12} />}
+                       {currentStatus?.label}
+                     </div>
+                     {order.sentToEcotrack && (
+                       <span className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border text-[9px] font-black uppercase tracking-wider bg-blue-50 text-blue-700 border-blue-200 shadow-sm">
+                         <PackageIcon size={11} />
+                         {t.sentToShipping}
+                       </span>
+                     )}
+                   </div>
                   <div className={`flex items-center gap-4 ${isRtl ? "flex-row-reverse" : "flex-row"}`}>
                     <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-slate-900 group-hover:text-white transition-all duration-500 shadow-inner">
                       <User size={24} />
@@ -755,7 +914,7 @@ export default function OrdersPage() {
                           <h3 className="font-black text-slate-900 tracking-tight">{order.clientName}</h3>
                           {order.isBlacklisted && (
                             <span className="px-2 py-0.5 bg-red-500 text-white text-[9px] font-black rounded-lg shadow-lg shadow-red-200">
-                              BL
+                              {t.bl}
                             </span>
                           )}
                         </div>
@@ -796,7 +955,7 @@ export default function OrdersPage() {
                       <span className="text-xs font-black text-slate-800 line-clamp-1">{order.product.name}</span>
                     </div>
                     <div className="text-[10px] font-black text-indigo-600">
-                      {revenue} {isRtl ? "د.ج" : "DA"} (x{order.quantity})
+                      {revenue} {t.currency} (x{order.quantity})
                     </div>
                     {user?.role === "ADMIN" && (
                       <div className="mt-3 pt-3 border-t border-slate-200/50 flex items-center justify-between">
@@ -810,7 +969,7 @@ export default function OrdersPage() {
                       <div className="mt-3 pt-3 border-t border-emerald-200/50 flex items-center justify-between">
                         <span className="flex items-center gap-1.5 text-[9px] font-black text-emerald-600 uppercase tracking-[0.1em]">
                           <UserCheck size={11} />
-                          {isRtl ? "تم التأكيد بواسطة" : "Confirmed by"}
+                          {t.orderConfirmedBy}
                         </span>
                         <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 text-[10px] font-black shadow-sm border border-emerald-200">
                           <Shield size={10} />
@@ -918,16 +1077,27 @@ export default function OrdersPage() {
                {selectedIds.some(id => {
                  const o = orders.find(o => o.id === id);
                  return o?.status === "CONFIRMED" && !o.sentToEcotrack;
-               }) && (
-                 <button 
-                   onClick={handleSendToShipping}
-                   className="flex items-center gap-2 px-4 py-2.5 rounded-2xl hover:bg-emerald-500 hover:text-white transition-all text-xs font-bold text-emerald-400 whitespace-nowrap"
-                   title={t.sendToShipping}
-                 >
-                   <PackageIcon size={14} />
-                   {t.sendToShipping}
-                 </button>
-               )}
+               }) && (() => {
+                 const hasProvider = selectedIds.some(id => {
+                   const o = orders.find(o => o.id === id);
+                   if (!o) return false;
+                   return shippingProviders.some(p => p.isActive && (p.storeId === o.storeId || !p.storeId));
+                 });
+                 return (
+                   <button 
+                     onClick={hasProvider ? handleSendToShipping : undefined}
+                     className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl transition-all text-xs font-bold whitespace-nowrap ${
+                       hasProvider
+                         ? "hover:bg-emerald-500 hover:text-white text-emerald-400 cursor-pointer"
+                         : "text-slate-600 cursor-not-allowed opacity-50"
+                     }`}
+                      title={hasProvider ? t.sendToShipping : t.orderNoShippingProvider}
+                   >
+                     <PackageIcon size={14} />
+                     {t.sendToShipping}
+                   </button>
+                 );
+               })()}
                {selectedIds.some(id => {
                  const o = orders.find(o => o.id === id);
                  return o?.sentToEcotrack && !o.ecotrackValidated;
@@ -955,19 +1125,32 @@ export default function OrdersPage() {
                  </button>
                )}
                {/* Print labels for sent orders */}
-               {selectedIds.some(id => {
-                 const o = orders.find(o => o.id === id);
-                 return o?.ecotrackRef;
-               }) && (
-                 <button 
-                   onClick={handlePrintLabels}
-                   className="flex items-center gap-2 px-4 py-2.5 rounded-2xl hover:bg-white hover:text-slate-900 transition-all text-xs font-bold whitespace-nowrap"
-                   title={t.printLabels}
-                 >
-                   <Printer size={14} />
-                   {t.printLabels}
-                 </button>
-               )}
+                {selectedIds.some(id => {
+                  const o = orders.find(o => o.id === id);
+                  return o?.ecotrackRef;
+                }) && (
+                  <button 
+                    onClick={handlePrintLabels}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-2xl hover:bg-white hover:text-slate-900 transition-all text-xs font-bold whitespace-nowrap"
+                    title={t.printLabels}
+                  >
+                    <Printer size={14} />
+                    {t.printLabels}
+                  </button>
+                )}
+                {selectedIds.some(id => {
+                  const o = orders.find(o => o.id === id);
+                  return o?.sentToEcotrack && o?.ecotrackRef;
+                }) && (
+                  <button 
+                    onClick={handlePrintBordereau}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-2xl hover:bg-indigo-500 hover:text-white transition-all text-xs font-bold text-indigo-400 whitespace-nowrap"
+                    title={(t.printBordereau || "")}
+                  >
+                    <FileText size={14} />
+                    {(t.printBordereau || "")}
+                  </button>
+                )}
                {user?.role === "ADMIN" && (
                  <button 
                   onClick={handleBulkDelete}
@@ -1055,25 +1238,83 @@ export default function OrdersPage() {
                 onChange={(e) => setFormData({ ...formData, state: e.target.value })}
                 required
               >
-                <option value="">{isRtl ? "اختر الولاية..." : "Select State..."}</option>
+                <option value="">{t.orderSelectState}</option>
                 {shippingConfigs.map(c => (
                   <option key={c.id} value={c.stateName}>{c.stateCode} - {c.stateName}</option>
                 ))}
               </select>
             </div>
-            <Input
-              label={t.city}
-              value={formData.city}
-              onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-              required
-              className="h-12"
-            />
+            <div className="flex flex-col space-y-1.5 relative" ref={communeRef}>
+              <label className="text-sm font-bold text-slate-700">{t.city} <span className="text-red-500">*</span></label>
+              <button
+                type="button"
+                onClick={() => { setCommuneDropdownOpen(!communeDropdownOpen); setCommuneSearch(""); }}
+                className={`w-full h-12 px-4 rounded-xl border text-sm font-bold focus:outline-none focus:ring-4 focus:ring-slate-900/5 focus:border-slate-900 transition-all text-left flex items-center justify-between ${formData.city ? "text-slate-900 bg-white" : "text-slate-400 bg-white"} ${!formData.state ? "opacity-50 cursor-not-allowed" : "cursor-pointer"} ${isRtl ? "flex-row-reverse text-right" : ""}`}
+                disabled={!formData.state}
+              >
+                <span className="truncate">
+                  {selectedCommune
+                    ? `${selectedCommune.commune_ar} (${selectedCommune.commune_latin})`
+                    : formData.city || t.orderSelectCommune}
+                </span>
+                <ChevronDown size={16} className="text-slate-400 flex-shrink-0" />
+              </button>
+              {communeDropdownOpen && formData.state && (
+                <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl max-h-72 flex flex-col">
+                  <div className="p-2 border-b border-slate-100">
+                    <input
+                      type="text"
+                      value={communeSearch}
+                      onChange={(e) => setCommuneSearch(e.target.value)}
+                      placeholder={t.orderSearchCommune}
+                      className="w-full h-10 px-3 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900/10"
+                      autoFocus
+                    />
+                  </div>
+                  <div className="overflow-y-auto flex-1">
+                    {formData.shippingType === "STOP_DESK" && loadingStopDesk ? (
+                      <div className="p-4 text-center text-sm text-slate-400 font-bold">
+                        {t.orderLoadingCommunes}
+                      </div>
+                    ) : filteredCommunes.length === 0 ? (
+                      <div className="p-4 text-center text-sm text-slate-400 font-bold">
+                        {formData.shippingType === "STOP_DESK"
+                          ? t.orderNoStopDeskCommunes
+                          : t.orderNoResults}
+                      </div>
+                    ) : (
+                      filteredCommunes.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => {
+                            setFormData({ ...formData, city: c.commune_latin });
+                            setCommuneDropdownOpen(false);
+                            setCommuneSearch("");
+                          }}
+                          className={`w-full px-4 py-2.5 text-sm text-left hover:bg-slate-50 transition-colors flex items-center gap-2 ${formData.city === c.commune_latin ? "bg-indigo-50 text-indigo-700 font-bold" : "text-slate-700"} ${isRtl ? "flex-row-reverse text-right" : ""}`}
+                        >
+                          <span>{c.commune_ar}</span>
+                          <span className="text-slate-400 text-xs">({c.commune_latin})</span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+              {formData.shippingType === "STOP_DESK" && formData.city && stopDeskCommunes && !stopDeskCommunes.has(formData.city) && (
+                <p className="text-xs text-amber-600 font-bold mt-1">
+                  {t.orderWarningNoStopDesk}
+                </p>
+              )}
+            </div>
             <div className="md:col-span-2">
               <Input
-                label={t.address}
+                label={`${t.address} *`}
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                 className="h-12"
+                required
               />
             </div>
 
@@ -1105,7 +1346,7 @@ export default function OrdersPage() {
                 onChange={(e) => setFormData({ ...formData, shippingCost: parseInt(e.target.value) || 0 })}
                 className="h-12 font-black bg-indigo-50/50 border-indigo-100 focus:border-indigo-500"
               />
-              <div className="absolute top-[38px] right-4 text-[10px] font-black text-indigo-400 uppercase tracking-widest">{isRtl ? "د.ج" : "DA"}</div>
+              <div className="absolute top-[38px] right-4 text-[10px] font-black text-indigo-400 uppercase tracking-widest">{t.currency}</div>
             </div>
             
             <div className="flex flex-col space-y-1.5">
@@ -1116,13 +1357,13 @@ export default function OrdersPage() {
                 onChange={(e) => setFormData({ ...formData, productId: e.target.value })}
                 required
               >
-                <option value="">{isRtl ? "اختر منتجاً..." : "Select a product..."}</option>
+                <option value="">{t.orderSelectProduct}</option>
                 {filteredProductsForModal.map(p => (
-                  <option key={p.id} value={p.id}>{p.name} ({p.sellingPrice} {isRtl ? "د.ج" : "DA"})</option>
+                  <option key={p.id} value={p.id}>{p.name} ({p.sellingPrice} {t.currency})</option>
                 ))}
               </select>
               {filteredProductsForModal.length === 0 && (
-                <p className="text-[10px] text-red-500 font-bold mt-1">{isRtl ? "لا توجد منتجات لهذا المتجر!" : "No products available for this store!"}</p>
+                <p className="text-[10px] text-red-500 font-bold mt-1">{t.orderNoProducts}</p>
               )}
             </div>
             <Input
@@ -1144,14 +1385,14 @@ export default function OrdersPage() {
                   className="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-600"
                 />
                 <label htmlFor="hasUpsell" className="text-sm font-bold text-slate-700 cursor-pointer select-none">
-                  {t.hasUpsell || "Has Upsell?"}
+                  {(t.hasUpsell || "")}
                 </label>
               </div>
               
               {formData.hasUpsell && (
                 <div className="animate-in slide-in-from-top-2 fade-in duration-200">
                   <Input
-                    label={t.upsellQuantity || "Upsell Extra Quantity"}
+                    label={(t.upsellQuantity || "")}
                     type="number"
                     value={formData.upsellQuantity}
                     onChange={(e) => setFormData({ ...formData, upsellQuantity: e.target.value })}
@@ -1164,7 +1405,7 @@ export default function OrdersPage() {
             <Input
               label={t.totalPrice}
               type="number"
-              placeholder={isRtl ? "اتركه فارغاً للحساب التلقائي" : "Leave empty for auto-calc"}
+              placeholder={t.orderAutoCalc}
               value={formData.totalPrice}
               onChange={(e) => setFormData({ ...formData, totalPrice: e.target.value })}
               className="h-12"
@@ -1206,6 +1447,6 @@ export default function OrdersPage() {
           </div>
         </div>
       </Modal>
-    </DashboardLayout>
+    </>
   );
 }

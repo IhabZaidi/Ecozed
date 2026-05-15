@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import DashboardLayout from "@/components/layout/DashboardLayout";
-import { Button, Input, Modal } from "@/components/ui";
+import { Button, Input, Modal, showToast } from "@/components/ui";
 import { useLanguage } from "@/lib/translations";
 import { 
   UserPlus, 
@@ -66,11 +65,11 @@ export default function UsersPage() {
   }, []);
 
   const PERMISSION_LABELS: Record<string, string> = {
-    read_orders: language === "ar" ? "عرض الطلبات" : "Read Orders",
-    write_orders: language === "ar" ? "إدارة الطلبات" : "Manage Orders",
-    manage_products: language === "ar" ? "إدارة المنتجات" : "Manage Products",
-    view_reports: language === "ar" ? "مشاهدة التقارير" : "View Reports",
-    access_all_stores: language === "ar" ? "الوصول لجميع المتاجر" : "Access All Stores",
+    read_orders: t.usersPermReadOrders,
+    write_orders: t.usersPermManageOrders,
+    manage_products: t.usersPermManageProducts,
+    view_reports: t.usersPermViewReports,
+    access_all_stores: t.usersPermAccessAllStores,
   };
 
   const hasAllStoresAccess = formData.permissions.includes("access_all_stores");
@@ -137,7 +136,7 @@ export default function UsersPage() {
       fetchWorkers();
     } else {
       const data = await res.json();
-      alert(data.error || (language === "ar" ? "حدث خطأ ما" : "Something went wrong"));
+      showToast("error", data.error || t.usersSomethingWentWrong);
     }
     setIsLoading(false);
   };
@@ -157,7 +156,7 @@ export default function UsersPage() {
   const isRtl = language === "ar";
 
   return (
-    <DashboardLayout>
+    <>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
           <h2 className="text-2xl font-bold text-slate-900">{t.usersTitle}</h2>
@@ -256,7 +255,7 @@ export default function UsersPage() {
                         <div className="flex flex-wrap gap-1 mt-2">
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-50 text-indigo-600 text-[9px] rounded border border-indigo-100 font-bold">
                             <Globe size={10} />
-                            {isRtl ? "جميع المتاجر" : "All Stores"}
+                            {t.allStores}
                           </span>
                         </div>
                       )}
@@ -334,7 +333,7 @@ export default function UsersPage() {
                 {worker.permissions.includes("access_all_stores") ? (
                   <div className="flex items-center gap-1.5 px-2 py-1 bg-indigo-50 text-indigo-600 text-[10px] rounded-lg border border-indigo-100 font-bold">
                     <Globe size={10} />
-                    {isRtl ? "جميع المتاجر" : "All Stores"}
+                    {t.allStores}
                   </div>
                 ) : (worker.stores?.length || 0) > 0 && (
                   <div className="flex flex-wrap gap-1">
@@ -354,7 +353,7 @@ export default function UsersPage() {
                 className="w-full text-xs gap-2 py-2"
               >
                 <Lock size={14} />
-                {isRtl ? "تغيير الصلاحيات / السر" : "Change Perms / Pass"}
+                {t.usersChangePerms}
               </Button>
             </div>
           ))}
@@ -382,14 +381,14 @@ export default function UsersPage() {
           <div className="space-y-4">
             <Input
               label={t.username}
-              placeholder={isRtl ? "مثال: ahmed_24" : "e.g. ahmed_24"}
+              placeholder={t.usersUsernamePlaceholder}
               value={formData.username}
               onChange={(e) => setFormData({ ...formData, username: e.target.value })}
               required
               disabled={!!editingWorker}
             />
             <Input
-              label={editingWorker ? (isRtl ? "كلمة المرور الجديدة (اختياري)" : "New Password (Optional)") : t.password}
+              label={editingWorker ? t.usersNewPassword : t.password}
               type="password"
               placeholder="••••••••"
               value={formData.password}
@@ -399,21 +398,21 @@ export default function UsersPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Input
-                label={language === "ar" ? "الراتب الأساسي" : "Base Salary"}
+                label={t.usersBaseSalary}
                 type="number"
                 value={formData.baseSalary}
                 onChange={(e) => setFormData({ ...formData, baseSalary: e.target.value })}
                 placeholder="0"
               />
               <Input
-                label={language === "ar" ? "سعر التأكيد" : "Confirmation Price"}
+                label={t.usersConfirmationPrice}
                 type="number"
                 value={formData.confirmationPrice}
                 onChange={(e) => setFormData({ ...formData, confirmationPrice: e.target.value })}
                 placeholder="0"
               />
               <Input
-                label={language === "ar" ? "بونص الأبسل" : "Upsell Bonus"}
+                label={t.usersUpsellBonus}
                 type="number"
                 value={formData.upsellBonus}
                 onChange={(e) => setFormData({ ...formData, upsellBonus: e.target.value })}
@@ -448,7 +447,7 @@ export default function UsersPage() {
               <div className="flex items-center justify-between">
                 <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
                   <Store size={16} />
-                  {isRtl ? "المتاجر المسموح بها" : "Allowed Stores"}
+                  {t.usersAllowedStores}
                 </label>
               </div>
 
@@ -495,7 +494,7 @@ export default function UsersPage() {
               )}
               {!hasAllStoresAccess && formData.storeIds.length > 0 && (
                 <p className="text-[10px] font-bold text-slate-400">
-                  {formData.storeIds.length} {isRtl ? "متجر (متاجر) مختارة" : "store(s) selected"}
+                  {t.usersStoresSelected.replace("{count}", String(formData.storeIds.length))}
                 </p>
               )}
             </div>
@@ -518,13 +517,13 @@ export default function UsersPage() {
           <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto">
             <AlertCircle size={32} />
           </div>
-          <p className="text-slate-600">{isRtl ? "هل أنت متأكد من حذف حساب هذا الموظف؟" : "Are you sure you want to delete this staff account?"}</p>
+          <p className="text-slate-600">{t.usersDeleteConfirm}</p>
           <div className="flex justify-center gap-3 pt-4">
             <Button variant="secondary" onClick={() => setIsDeleteModalOpen(false)}>{t.cancel}</Button>
             <Button variant="danger" onClick={handleDelete} isLoading={isLoading}>{t.delete}</Button>
           </div>
         </div>
       </Modal>
-    </DashboardLayout>
+    </>
   );
 }
